@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a">
+<title>Scotland Walking Tours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap">
+<style>
+:root{
+  --navy:#0b1f3a; --heather:#6b4c8a; --thistle:#b48ec6; --gold:#d4a63a; --cream:#faf7f0;
+  --bg:#faf7f0; --fg:#12233c; --card:#ffffff; --muted:#5a6675; --line:#e6ddca;
+  --shadow:0 1px 3px rgba(11,31,58,.12);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1f3a; --fg:#eef2f8; --card:#12294a; --muted:#9fb0c6; --line:#22406b;
+         --shadow:0 1px 3px rgba(0,0,0,.4); }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  background:var(--bg); color:var(--fg);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+h1{font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;
+   font-size:30px;line-height:1.2;margin:0}
+header{background:var(--navy);color:#fff;padding:26px 0 22px}
+header p{margin:8px 0 0;color:var(--thistle);font-size:15px}
+.tartan{height:6px;background:repeating-linear-gradient(90deg,
+  #0b1f3a 0 14px,#6b4c8a 14px 22px,#0b1f3a 22px 26px,
+  #d4a63a 26px 29px,#0b1f3a 29px 40px,#b48ec6 40px 46px,#0b1f3a 46px 52px)}
+ul#tours{list-style:none;margin:26px 0 0;padding:0}
+ul#tours li{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);margin:0 0 14px;padding:16px}
+ul#tours a{display:block;min-height:26px;font-family:"Playfair Display",Georgia,serif;
+  font-size:19px;font-weight:700;color:var(--heather);text-decoration:none;overflow-wrap:break-word}
+@media (prefers-color-scheme:dark){ ul#tours a{color:var(--thistle)} }
+ul#tours .m{display:block;margin-top:6px;font-size:13.5px;color:var(--muted)}
+ul#tours:empty::after{content:"No tours yet. Ask Claude for one.";display:block;
+  color:var(--muted);font-style:italic;padding:26px 0}
+footer{border-top:1px solid var(--line);margin-top:30px;padding:20px 0 34px;
+  font-size:12.5px;color:var(--muted);text-align:center}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Scotland Walking Tours</h1>
+    <p>Self-guided walks with maps, pictures and a voice in your pocket.</p>
+  </div>
+</header>
+<div class="tartan"></div>
+
+<main class="wrap">
+<ul id="tours">
+<!-- newest first -->
+<li><a href="tours/edinburgh-castle-7-0925.html">Edinburgh Castle and the Castlehill Old Town</a>
+<span class="m">Edinburgh, Scotland &middot; 7 stops &middot; 14 September 2026</span></li>
+</ul>
+</main>
+
+<footer class="wrap">
+  Maps &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
+  &middot; Photos <a href="https://commons.wikimedia.org/">Wikimedia Commons</a>
+  &middot; Routing <a href="https://project-osrm.org/">OSRM</a>
+</footer>
+
+</body>
+</html>

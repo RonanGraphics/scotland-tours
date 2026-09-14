@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a">
+<title>Edinburgh Castle and the Castlehill Old Town</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --navy:#0b1f3a; --heather:#6b4c8a; --thistle:#b48ec6; --gold:#d4a63a; --cream:#faf7f0;
+  --bg:#faf7f0; --fg:#12233c; --card:#ffffff; --muted:#5a6675; --line:#e6ddca;
+  --shadow:0 1px 3px rgba(11,31,58,.12);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1f3a; --fg:#eef2f8; --card:#12294a; --muted:#9fb0c6; --line:#22406b;
+         --shadow:0 1px 3px rgba(0,0,0,.4); }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  background:var(--bg); color:var(--fg);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;line-height:1.2;margin:0}
+
+/* ---------- header ---------- */
+header{background:var(--navy);color:#fff;padding:22px 0 0}
+header h1{font-size:28px;letter-spacing:.2px}
+.loc{font-size:15px;color:var(--thistle);margin:6px 0 0}
+.meta{font-size:14px;color:#cdd8e6;margin:10px 0 0}
+.badge{display:inline-block;margin:12px 0 0;padding:4px 12px;border-radius:999px;
+  background:var(--gold);color:var(--navy);font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.09em}
+.headbtns{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 18px}
+.tartan{height:6px;background:repeating-linear-gradient(90deg,
+  #0b1f3a 0 14px,#6b4c8a 14px 22px,#0b1f3a 22px 26px,
+  #d4a63a 26px 29px,#0b1f3a 29px 40px,#b48ec6 40px 46px,#0b1f3a 46px 52px)}
+
+/* ---------- buttons ---------- */
+button,.btn{
+  font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 16px;
+  border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  text-decoration:none;-webkit-tap-highlight-color:transparent;
+}
+button:active,.btn:active{transform:translateY(1px)}
+.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.45)}
+button[disabled]{opacity:.5;cursor:default}
+
+/* ---------- intro ---------- */
+#intro{padding:22px 0 4px}
+#intro p{margin:0 0 14px;font-size:17px}
+
+/* ---------- map ---------- */
+#map{height:45vh;min-height:280px;width:100%;background:var(--line);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);z-index:0}
+.pin{background:none;border:none}
+.pin span{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  font-weight:700;font-size:15px;border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.pin.done span{background:#b9c2cd;color:#4a5564}
+.me{background:none;border:none}
+.me i{display:block;width:16px;height:16px;border-radius:50%;background:#1e7bf0;
+  border:2px solid #fff;animation:pulse 1.8s infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(30,123,240,.55)}
+  70%{box-shadow:0 0 0 16px rgba(30,123,240,0)}
+  100%{box-shadow:0 0 0 0 rgba(30,123,240,0)}}
+.leaflet-popup-content{font-size:14px;margin:10px 12px}
+.leaflet-popup-content b{font-family:"Playfair Display",Georgia,serif}
+
+/* ---------- geo bar ---------- */
+#geobar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0}
+#geostatus{font-size:14px;color:var(--muted);flex:1 1 180px;min-width:0}
+
+/* ---------- stop cards ---------- */
+.stop{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);margin:0 0 18px;overflow:hidden}
+.stop.visited{opacity:.62}
+.stop.visited .num{background:#b9c2cd;color:#4a5564}
+.stophead{display:flex;gap:12px;align-items:flex-start;padding:16px 16px 0}
+.num{flex:none;width:44px;height:44px;min-height:44px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;
+  border:none;padding:0;font-family:"Playfair Display",Georgia,serif}
+.stophead h2{font-size:21px;margin:4px 0 0;min-width:0;overflow-wrap:break-word}
+.teaser{color:var(--muted);font-size:15px;font-style:italic;margin:10px 16px 0}
+.shot{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:14px 0 0;background:var(--line)}
+.ph{width:100%;aspect-ratio:16/10;margin:14px 0 0;display:flex;align-items:center;justify-content:center;
+  gap:14px;background:linear-gradient(135deg,var(--navy),var(--heather));color:var(--gold)}
+.ph b{font-family:"Playfair Display",Georgia,serif;font-size:56px;line-height:1}
+.credit{display:block;font-size:11px;color:var(--muted);padding:6px 16px 0;text-align:right}
+.credit a{color:var(--muted)}
+.narr{margin:14px 16px 0;font-size:16.5px}
+.tip{margin:14px 16px 0;padding:11px 14px;border-left:3px solid var(--heather);
+  background:rgba(107,76,138,.09);border-radius:0 8px 8px 0;font-size:14.5px}
+.tip b{color:var(--heather)}
+.row{display:flex;gap:10px;flex-wrap:wrap;padding:16px}
+.visited-tick{color:var(--heather);font-weight:700}
+
+/* ---------- now playing ---------- */
+#now{position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--navy);color:#fff;
+  display:none;align-items:center;gap:12px;padding:12px 16px;
+  box-shadow:0 -2px 12px rgba(0,0,0,.3);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+#now.on{display:flex}
+#nowtxt{flex:1 1 auto;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.playing{padding-bottom:76px}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);margin-top:10px;padding:20px 0 34px;
+  font-size:12.5px;color:var(--muted);text-align:center}
+footer a{color:var(--muted)}
+.fallback{padding:40px 0;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1 id="t-title">&nbsp;</h1>
+    <p class="loc" id="t-loc"></p>
+    <p class="meta" id="t-meta"></p>
+    <span class="badge" id="t-flavour" hidden></span>
+    <div class="headbtns">
+      <button id="playall" class="btn-gold" type="button">&#9654;&nbsp; Play whole tour</button>
+      <button id="locate" class="btn-ghost" type="button">&#9678;&nbsp; Locate me</button>
+    </div>
+  </div>
+  <div class="tartan"></div>
+</header>
+
+<main>
+  <section id="intro" class="wrap"></section>
+  <div id="map"></div>
+  <div id="geobar" class="wrap"><span id="geostatus">Tap &ldquo;Locate me&rdquo; to see how far you are from the next stop.</span></div>
+  <section id="stops" class="wrap"></section>
+</main>
+
+<footer class="wrap"><span id="foot"></span></footer>
+
+<div id="now"><span id="nowtxt"></span><button id="nowstop" type="button">&#9632;&nbsp; Stop</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const TOUR = {
+ "slug": "edinburgh-castle-7-0925",
+ "title": "Edinburgh Castle and the Castlehill Old Town",
+ "location": "Edinburgh, Scotland",
+ "intro": "A short, steep loop around the roof of Edinburgh's Old Town, starting at the castle gate and finishing in the Grassmarket with the best view of the rock in the city. It is only about six hundred metres of walking, but every hundred of them carries several centuries, so allow an hour and stop whenever something catches your eye. Wear something with grip, because the way back up is cobbled.",
+ "flavour": "general",
+ "generated": "2026-09-14",
+ "anchor": {
+  "lat": 55.94861111,
+  "lon": -3.20083333
+ },
+ "totalKm": 0.61,
+ "estMinutes": 65,
+ "stops": [
+  {
+   "n": 1,
+   "title": "Edinburgh Castle",
+   "teaser": "Twenty six sieges in eleven hundred years, and it is still standing.",
+   "narration": "Start where Edinburgh starts. This lump of volcanic rock has had people living on it since at least the Iron Age, and there has been a royal castle up here since the reign of Malcolm the Third in the eleventh century. Kings and queens actually lived in it until sixteen thirty three, after which it settled into a rougher life as arsenal, mint, national archive, prison and army garrison. Researchers counted the sieges in twenty fourteen and reached twenty six, which gives Edinburgh Castle a fair claim to being the most besieged place in Britain. Walk the esplanade and look up at the walls, and notice how little of what you see is truly medieval. The Lang Siege of fifteen seventy three brought most of the old defences down with artillery, so much of this frontage is a rebuild. The great survivor is Saint Margaret's Chapel, early twelfth century, small, plain, and the oldest building in the whole city. Somewhere behind those walls sit the Honours of Scotland, the crown, sceptre and sword that were once bricked up in a room and forgotten for over a hundred years until Walter Scott went looking. Two million people came through that gate last year. Now turn your back on all of it and walk a little downhill, because the next stop is the prettiest accident in Edinburgh.",
+   "tip": "The castle is in the care of Historic Environment Scotland and is the second busiest attraction in the country. If you want to go inside rather than just admire it, book a timed ticket before you walk up.",
+   "lat": 55.94861111,
+   "lon": -3.20083333,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/5/59/City_of_Edinburgh_-_Edinburgh_Castle_-_20140421004403.jpg",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/Edinburgh_Castle",
+   "source": "wikipedia"
+  },
+  {
+   "n": 2,
+   "title": "Ramsay Garden",
+   "teaser": "The red and white flats that photobomb every picture of Edinburgh.",
+   "narration": "That cluster of red and white buildings tumbling down the north side of the rock is Ramsay Garden, and it is the thing every photograph taken from Princes Street accidentally features. Sixteen private flats, red ashlar stone against white harled walls, stacked at angles no planning committee today would approve. It grew out of one odd house. In seventeen thirty three the poet and wig maker Allan Ramsay the Elder built himself an octagonal home up here, and Edinburgh, never gentle about such things, promptly nicknamed it Goosepie House because of the shape of the roof. A short row of plain Georgian houses called Ramsay Street joined it in seventeen sixty. Then between eighteen ninety and eighteen ninety three Patrick Geddes got hold of the site. Geddes was a biologist and botanist who turned himself into a town planner, and he believed people of different incomes should live stacked together in one building rather than sorted into separate districts. Ramsay Garden was his demonstration, and people still live in it. Look for the octagon still buried in the middle of the block, and for the way the white harling makes the red stone sing on a grey day. Carry on down towards the foot of the esplanade now, where a small fountain set into a wall marks something a great deal darker.",
+   "tip": "These are sixteen private homes. Admire them from the esplanade or from Princes Street. The inner courtyard is not public.",
+   "lat": 55.94916667,
+   "lon": -3.19666667,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/4/45/Edinburgh_old_town_dsc06355.jpg",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/Ramsay_Garden",
+   "source": "wikipedia"
+  },
+  {
+   "n": 3,
+   "title": "Witches' Well",
+   "teaser": "A small fountain marking the city's darkest corner, and almost everyone walks past it.",
+   "narration": "Most people walk straight past this one, which is rather the point. Set into the wall at the lower end of the Castle Esplanade is a small cast iron drinking fountain. It is the only memorial in Edinburgh to the people, overwhelmingly women, who were accused of witchcraft and burned at the stake, and many of them died within a few steps of where you are standing. Castlehill was the city's place of execution for this, and the numbers behind it are grim. At the height of the witch hunts in the early modern period, roughly a third of everyone accused of witchcraft in Scotland came from the Lothians alone. Look closely at the panel. There is a snake coiled through it, there are foxglove leaves, and there are two faces, one serene and one troubled, set there to hold both readings of the accused woman together, healer and harmer. It is a strange, ambiguous little memorial and it has been argued over ever since it went up. Thousands of people queue past it every summer on the way to the castle gate without once glancing down. Give it the thirty seconds it is owed, then walk on a few doors east, and watch the western wall of the next building for something that has no business being in it.",
+   "tip": null,
+   "lat": 55.9489,
+   "lon": -3.19643,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/1/17/Witches_Well.jpg",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/Witches%27_Well,_Edinburgh",
+   "source": "wikipedia"
+  },
+  {
+   "n": 4,
+   "title": "Cannonball House",
+   "teaser": "A house named after one piece of iron stuck in its wall.",
+   "narration": "Here is a building named after a single small piece of iron. Cannonball House went up in sixteen thirty as a town house at the top of the Royal Mile and was heavily reworked in the early twentieth century, but nobody has ever called it anything else, because of what is stuck in its western wall. Stand back and look at the gable that faces the castle, roughly at head height or a little above. There is a cannonball lodged in the stonework. The story everybody tells is that it was fired from the castle at the Jacobite army in seventeen forty five and simply missed, and it is a very good story. The duller and far likelier explanation is that it is a marker, set there on purpose to record the height that water from the Comiston springs would naturally rise to when the city first got a piped supply. A gravity gauge, in other words, dressed up as a piece of drama. The house is Category A listed, which in Scotland is the top tier, the same protection the castle itself carries. Whichever version you prefer, it has been up there a very long time. A few doors along the same side, a squat tower is hiding one of the strangest rooms in Scotland.",
+   "tip": null,
+   "lat": 55.94876,
+   "lon": -3.19622,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/a/ac/356_Castlehill%2C_Cannonball_House%2C_Edinburgh.jpg",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/Cannonball_House_(Edinburgh)",
+   "source": "wikipedia"
+  },
+  {
+   "n": 5,
+   "title": "Camera Obscura and World of Illusions",
+   "teaser": "A Victorian dark room that still puts the whole city on a table.",
+   "narration": "This squat tower holds a Victorian trick that still beats most screens. At the top there is a dark room, and above it a mirror and a lens on the roof throw a live moving image of the whole city down onto a white bowl in front of you. No electricity is involved at all. People lean over it and watch buses crawl along Princes Street in complete silence. The attraction was founded in eighteen thirty five by Maria Theresa Short, a formidable woman who first showed it on Calton Hill and then spent years scrapping with the city authorities over her right to keep it. She won often enough to end up here. From the late eighteen nineties the building worked as a museum, and the man who shaped it was Patrick Geddes again, the same planner who built Ramsay Garden behind you. He called it his sociological laboratory and meant the view itself to be the exhibit, a way of teaching people to see their own city whole. Look up at the roof for the small white dome that houses the mirror. Around the original camera there are now five floors of mirror mazes and optical illusions, which is either a bonus or a distraction depending on your patience. Carry on east and you cannot miss The Hub, because it is the highest thing in central Edinburgh.",
+   "tip": "This is a paid attraction spread over several floors. Allow an hour or more if you go in, and note that the camera obscura itself needs daylight to work.",
+   "lat": 55.949,
+   "lon": -3.1956,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/2/2d/Outlook_Tower%2C_Castlehill%2C_Edinburgh.JPG",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/Camera_Obscura,_Edinburgh",
+   "source": "wikipedia"
+  },
+  {
+   "n": 6,
+   "title": "The Hub",
+   "teaser": "The tallest spire in the centre, built for a church that never was.",
+   "narration": "Look up. That Gothic spire is seventy one and a half metres of stone and it is the highest point in central Edinburgh, which is a mild cheat, because the ground it stands on is already near the top of the ridge. The building went up between eighteen forty two and eighteen forty five to designs by James Gillespie Graham and Augustus Pugin, the same Pugin who was at that moment filling the new Palace of Westminster with Gothic detail. It looks like a church and it carries the spire of a cathedral, but it was built as neither. It was built as a meeting hall for the General Assembly of the Church of Scotland. Only from nineteen twenty nine did it serve as an ordinary church, and that lasted until the mid nineteen eighties, after which it sat quiet. Today it is The Hub, home of the Edinburgh International Festival, a box office, an information point and a venue, and every August the whole place hums. Look for the carved figures ranged around the doorway, and if you can get inside, for the colour of the interior, which is a startling answer to the sober stone outside. From here the walk drops. Take the steep curve of the West Bow down into the Grassmarket.",
+   "tip": "The Hub works as the Edinburgh International Festival box office and information point, so it is busiest in August.",
+   "lat": 55.94897778,
+   "lon": -3.19464722,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Edinburgh_Royal_Mile01.jpg",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/The_Hub,_Edinburgh",
+   "source": "wikipedia"
+  },
+  {
+   "n": 7,
+   "title": "The Grassmarket",
+   "teaser": "Cattle market, gallows, and the best view of the castle in Edinburgh.",
+   "narration": "You have reached the bottom of the hill, and this is the best view of the castle you will get all day. The Grassmarket sits in a valley at the south west foot of Castle Rock, well below everything around it, which is exactly why the crag above looks so improbably sheer from down here. For centuries this was precisely what the name says, a market, with cattle and horses traded on these cobbles and the whole space ringed with inns for the drovers who brought them in. It was also where the city hanged people. Look for the dark stone cross set into the paving towards the east end, which marks the site of the gallows and remembers the Covenanters who died on it in the sixteen hundreds. The pub on the north side is named for Maggie Dickson, hanged here in seventeen twenty four, who woke up in her coffin on the road home to Musselburgh and then lived on for decades as Half Hangit Maggie. Scots law being what it was, her sentence had already been carried out, so she could not be hanged a second time. That is the tour. The castle gate is a five minute climb back up Victoria Street and the West Bow, and the pubs down here are considerably closer.",
+   "tip": null,
+   "lat": 55.9475,
+   "lon": -3.19611111,
+   "image": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Grassmarket_Edinburgh_in_the_fog.JPG",
+   "imageCredit": "Wikimedia Commons",
+   "wiki": "https://en.wikipedia.org/wiki/Grassmarket",
+   "source": "wikipedia"
+  }
+ ]
+};
+</script>
+<script>
+(function(){
+  "use strict";
+
+  if (typeof TOUR === "undefined" || !TOUR || !TOUR.stops) {
+    document.getElementById("stops").innerHTML =
+      '<p class="fallback">This is the blank tour template. Generate a tour with the walking-tour skill.</p>';
+    return;
+  }
+
+  var stops = TOUR.stops || [];
+
+  /* ---------- helpers ---------- */
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function hav(aLat,aLon,bLat,bLon){            /* metres */
+    var R=6371000, r=Math.PI/180;
+    var p1=aLat*r, p2=bLat*r, dp=(bLat-aLat)*r, dl=(bLon-aLon)*r;
+    var h=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+  function far(m){ return m<1000 ? Math.round(m/10)*10+" m" : (m/1000).toFixed(1)+" km"; }
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------- storage (guarded) ---------- */
+  var KEY = "scotland-tours:visited:" + (TOUR.slug || "tour");
+  var store = (function(){
+    try { var t="__t"; window.localStorage.setItem(t,t); window.localStorage.removeItem(t); return window.localStorage; }
+    catch(e){ return null; }
+  })();
+  function loadVisited(){
+    if(!store) return {};
+    try { var v=JSON.parse(store.getItem(KEY)||"[]"), o={}; for(var i=0;i<v.length;i++) o[v[i]]=true; return o; }
+    catch(e){ return {}; }
+  }
+  function saveVisited(){
+    if(!store) return;
+    var a=[]; for(var k in visited){ if(visited[k]) a.push(Number(k)); }
+    try { store.setItem(KEY, JSON.stringify(a)); } catch(e){}
+  }
+  var visited = loadVisited();
+
+  /* ---------- header ---------- */
+  document.title = (TOUR.title || "Walking tour");
+  $("t-title").textContent = TOUR.title || "Walking tour";
+  $("t-loc").textContent   = TOUR.location || "";
+  $("t-meta").textContent  = stops.length + " stops · " +
+      (Number(TOUR.totalKm)||0).toFixed(1) + " km · about " + (TOUR.estMinutes||0) + " min";
+  if (TOUR.flavour){ var fb=$("t-flavour"); fb.textContent=TOUR.flavour; fb.hidden=false; }
+  $("foot").innerHTML = "Generated " + esc(TOUR.generated||"") +
+    ' · Map &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>' +
+    ' · Photos <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>' +
+    ' · Routing <a href="https://project-osrm.org/" target="_blank" rel="noopener">OSRM</a>';
+
+  /* ---------- intro ---------- */
+  $("intro").innerHTML = '<p id="introtxt"></p><button id="playintro" type="button">&#9654;&nbsp; Play intro</button>';
+  $("introtxt").textContent = TOUR.intro || "";
+
+  /* ---------- stop cards ---------- */
+  var THISTLE = '<svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M12 21c0-5-1-7-1-9"/><path d="M8.5 6.2C8.5 4.4 10 3 12 3s3.5 1.4 3.5 3.2"/>' +
+    '<path d="M8.6 6h6.8c0 2.7-1.5 4.6-3.4 4.6S8.6 8.7 8.6 6z"/>' +
+    '<path d="M9.4 5.4 8 2.6M12 5.1V2M14.6 5.4 16 2.6"/>' +
+    '<path d="M11 14c-2.2.3-3.8 1.9-4.2 4M13 14c2.2.3 3.8 1.9 4.2 4"/></svg>';
+
+  var html = "";
+  for (var i=0;i<stops.length;i++){
+    var s = stops[i], n = s.n || (i+1), done = !!visited[n];
+    html += '<article class="stop'+(done?' visited':'')+'" id="stop-'+n+'" data-n="'+n+'">';
+    html += '<div class="stophead"><button class="num" type="button" data-act="map" data-n="'+n+'" ' +
+            'aria-label="Show stop '+n+' on the map">'+n+'</button><h2>'+esc(s.title)+'</h2></div>';
+    if (s.teaser) html += '<p class="teaser">'+esc(s.teaser)+'</p>';
+    if (s.image){
+      html += '<img class="shot" loading="lazy" decoding="async" src="'+esc(s.image)+'" alt="'+esc(s.title)+'">';
+      html += '<span class="credit"><a href="'+esc(s.wiki||"#")+'" target="_blank" rel="noopener">'+
+              esc(s.imageCredit||"Wikimedia Commons")+'</a></span>';
+    } else {
+      html += '<div class="ph" aria-hidden="true"><b>'+n+'</b>'+THISTLE+'</div>';
+    }
+    html += '<p class="narr">'+esc(s.narration)+'</p>';
+    if (s.tip) html += '<p class="tip"><b>Tip.</b> '+esc(s.tip)+'</p>';
+    html += '<div class="row">';
+    html += '<button type="button" data-act="say" data-n="'+n+'">&#9654;&nbsp; Listen</button>';
+    html += '<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination='+
+            encodeURIComponent(s.lat+","+s.lon)+'&amp;travelmode=walking">&#10152;&nbsp; Directions</a>';
+    html += '<button type="button" data-act="visit" data-n="'+n+'">'+
+            (done?'<span class="visited-tick">&#10003;</span>&nbsp; Visited':'&#9711;&nbsp; Mark visited')+'</button>';
+    html += '</div></article>';
+  }
+  $("stops").innerHTML = html;
+
+  function paintCard(n){
+    var card=$("stop-"+n); if(!card) return;
+    var done=!!visited[n];
+    card.className = "stop"+(done?" visited":"");
+    var b=card.querySelector('[data-act="visit"]');
+    if(b) b.innerHTML = done ? '<span class="visited-tick">&#10003;</span>&nbsp; Visited'
+                             : '&#9711;&nbsp; Mark visited';
+    if(markers[n] && markers[n].getElement && markers[n].getElement())
+      markers[n].getElement().classList.toggle("done", done);
+  }
+
+  /* ---------- map ---------- */
+  var map=null, markers={}, meDot=null, meRing=null;
+  if (window.L && stops.length){
+    map = L.map("map",{scrollWheelZoom:false});
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var pts=[];
+    for (var j=0;j<stops.length;j++){
+      var st=stops[j], nn=st.n||(j+1);
+      if (typeof st.lat!=="number" || typeof st.lon!=="number") continue;
+      pts.push([st.lat, st.lon]);
+      var mk = L.marker([st.lat,st.lon],{
+        icon: L.divIcon({className:"pin"+(visited[nn]?" done":""), html:"<span>"+nn+"</span>",
+                         iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-16]})
+      }).addTo(map);
+      mk.bindPopup("<b>"+esc(st.title)+"</b><br>Stop "+nn);
+      (function(num){
+        mk.on("click", function(){ var c=$("stop-"+num); if(c) c.scrollIntoView({behavior:"smooth",block:"start"}); });
+      })(nn);
+      markers[nn]=mk;
+    }
+    if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.18));
+
+    /* straight-line fallback drawn only if OSRM does not answer */
+    var routed=false;
+    function straight(){
+      if (routed || pts.length<2) return;
+      routed=true;
+      L.polyline(pts,{color:"#6b4c8a",weight:4,opacity:.8,dashArray:"7 7"}).addTo(map);
+    }
+    if (pts.length>1 && typeof window.fetch==="function"){
+      var coords=[]; for (var k=0;k<pts.length;k++) coords.push(pts[k][1]+","+pts[k][0]);
+      var url="https://router.project-osrm.org/route/v1/foot/"+coords.join(";")+"?overview=full&geometries=geojson";
+      var ctrl = (typeof AbortController==="function") ? new AbortController() : null;
+      var timer = setTimeout(function(){ if(ctrl){ try{ ctrl.abort(); }catch(e){} } straight(); }, 6000);
+      fetch(url, ctrl?{signal:ctrl.signal}:{})
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(new Error("osrm")); })
+        .then(function(d){
+          clearTimeout(timer);
+          var g = d && d.routes && d.routes[0] && d.routes[0].geometry;
+          if (routed || !g || !g.coordinates || !g.coordinates.length) { straight(); return; }
+          routed=true;
+          var line=[]; for (var m=0;m<g.coordinates.length;m++) line.push([g.coordinates[m][1], g.coordinates[m][0]]);
+          L.polyline(line,{color:"#6b4c8a",weight:5,opacity:.85}).addTo(map);
+        })
+        .catch(function(){ clearTimeout(timer); straight(); });
+    } else {
+      straight();
+    }
+  }
+
+  /* ---------- speech ---------- */
+  var synth = ("speechSynthesis" in window) ? window.speechSynthesis : null;
+  var voice=null, queue=[], qi=-1, single=-1;
+
+  function pickVoice(){
+    if(!synth || !synth.getVoices) return;
+    var vs = synth.getVoices() || [], i;
+    for (i=0;i<vs.length;i++) if (/scot/i.test(vs[i].name||"")) { voice=vs[i]; return; }
+    for (i=0;i<vs.length;i++) if ((vs[i].lang||"").toLowerCase().replace("_","-")==="en-gb") { voice=vs[i]; return; }
+    voice=null;
+  }
+  if (synth){ pickVoice(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice; }
+
+  function resetButtons(){
+    var bs=document.querySelectorAll('[data-act="say"]'), i;
+    for(i=0;i<bs.length;i++) bs[i].innerHTML="&#9654;&nbsp; Listen";
+    var pi=$("playintro"); if(pi) pi.innerHTML="&#9654;&nbsp; Play intro";
+    $("playall").innerHTML="&#9654;&nbsp; Play whole tour";
+  }
+  function showNow(txt){
+    var bar=$("now");
+    if (txt){ $("nowtxt").textContent=txt; bar.classList.add("on"); document.body.classList.add("playing"); }
+    else { bar.classList.remove("on"); document.body.classList.remove("playing"); }
+  }
+  function stopAll(){
+    queue=[]; qi=-1; single=-1;
+    if (synth) { try{ synth.cancel(); }catch(e){} }
+    resetButtons(); showNow("");
+  }
+  function utter(text, onend){
+    if (!synth) return false;
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate=0.95; u.lang="en-GB";
+    if (voice) u.voice=voice;
+    u.onend = onend || null;
+    u.onerror = onend || null;
+    try { synth.speak(u); } catch(e){ return false; }
+    return true;
+  }
+  function noSpeech(){
+    showNow("Speech is not available on this browser.");
+    setTimeout(function(){ showNow(""); }, 3000);
+  }
+
+  function sayOne(n){
+    if (!synth) { noSpeech(); return; }
+    if (single === n){ stopAll(); return; }
+    stopAll();
+    var s=null; for (var i=0;i<stops.length;i++) if ((stops[i].n||(i+1))===n) s=stops[i];
+    if (!s) return;
+    single = n;
+    var btn = document.querySelector('[data-act="say"][data-n="'+n+'"]');
+    if (btn) btn.innerHTML="&#9632;&nbsp; Stop";
+    showNow("Now playing: stop " + n);
+    utter((s.title||"") + ". " + (s.narration||""), function(){
+      if (single===n){ single=-1; resetButtons(); showNow(""); }
+    });
+  }
+  function sayIntro(){
+    if (!synth) { noSpeech(); return; }
+    if (single === 0){ stopAll(); return; }
+    stopAll(); single = 0;
+    $("playintro").innerHTML="&#9632;&nbsp; Stop";
+    showNow("Now playing: introduction");
+    utter(TOUR.intro || "", function(){
+      if (single===0){ single=-1; resetButtons(); showNow(""); }
+    });
+  }
+  function step(){
+    if (qi < 0 || qi >= queue.length){ stopAll(); return; }
+    var item = queue[qi];
+    showNow("Now playing: " + item.label);
+    if (item.scroll){ var c=$("stop-"+item.scroll); if(c) c.scrollIntoView({behavior:"smooth",block:"start"}); }
+    utter(item.text, function(){ if(qi<0) return; qi++; step(); });
+  }
+  function playAll(){
+    if (!synth) { noSpeech(); return; }
+    if (qi > -1){ stopAll(); return; }
+    stopAll();
+    queue = [{label:"introduction", text:TOUR.intro||"", scroll:0}];
+    for (var i=0;i<stops.length;i++){
+      var s=stops[i], n=s.n||(i+1);
+      queue.push({label:"stop "+n+" · "+(s.title||""), text:(s.title||"")+". "+(s.narration||""), scroll:n});
+    }
+    qi = 0;
+    $("playall").innerHTML="&#9632;&nbsp; Stop tour";
+    step();
+  }
+
+  /* ---------- geolocation (user gesture only, never on load) ---------- */
+  var watchId=null;
+  function geoStatus(t){ $("geostatus").textContent=t; }
+  function locate(){
+    if (!navigator.geolocation){ geoStatus("This browser cannot share your location."); return; }
+    if (watchId!==null){
+      navigator.geolocation.clearWatch(watchId); watchId=null;
+      if (map && meDot){ map.removeLayer(meDot); meDot=null; }
+      if (map && meRing){ map.removeLayer(meRing); meRing=null; }
+      $("locate").innerHTML="&#9678;&nbsp; Locate me";
+      geoStatus("Location off. Tap “Locate me” to turn it back on.");
+      return;
+    }
+    geoStatus("Finding you…");
+    $("locate").innerHTML="&#9678;&nbsp; Stop locating";
+    watchId = navigator.geolocation.watchPosition(onPos, onGeoErr, {
+      enableHighAccuracy:true, maximumAge:5000, timeout:20000
+    });
+  }
+  function onPos(pos){
+    var la=pos.coords.latitude, lo=pos.coords.longitude, acc=pos.coords.accuracy||0;
+    if (map){
+      if (!meDot){
+        meDot = L.marker([la,lo],{icon:L.divIcon({className:"me",html:"<i></i>",iconSize:[16,16],iconAnchor:[8,8]}),
+                                  zIndexOffset:1000}).addTo(map);
+        meRing = L.circle([la,lo],{radius:acc,color:"#1e7bf0",weight:1,fillColor:"#1e7bf0",fillOpacity:.10}).addTo(map);
+      } else {
+        meDot.setLatLng([la,lo]); meRing.setLatLng([la,lo]); meRing.setRadius(acc);
+      }
+    }
+    var best=null;
+    for (var i=0;i<stops.length;i++){
+      var s=stops[i], n=s.n||(i+1);
+      if (visited[n]) continue;
+      if (typeof s.lat!=="number" || typeof s.lon!=="number") continue;
+      var d=hav(la,lo,s.lat,s.lon);
+      if (!best || d<best.d) best={d:d,n:n,title:s.title};
+    }
+    if (!best) geoStatus("Every stop is marked visited. Well walked.");
+    else geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title);
+  }
+  function onGeoErr(err){
+    $("locate").innerHTML="&#9678;&nbsp; Locate me";
+    if (watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
+    var msg = "Could not get your location. Carry on with the map.";
+    if (err && err.code===1) msg = "Location permission was declined. The tour works fine without it.";
+    else if (err && err.code===2) msg = "No location signal here. Try again outdoors.";
+    else if (err && err.code===3) msg = "Location is taking too long. Try again in a moment.";
+    geoStatus(msg);
+  }
+
+  /* ---------- events (delegated) ---------- */
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest ? ev.target.closest("[data-act]") : null;
+    if (!b) return;
+    var n = Number(b.getAttribute("data-n")), act = b.getAttribute("data-act");
+    if (act==="say")   { sayOne(n); }
+    else if (act==="visit"){ visited[n] = !visited[n]; saveVisited(); paintCard(n); }
+    else if (act==="map")  {
+      if (!map || !markers[n]) return;
+      map.setView(markers[n].getLatLng(), Math.max(map.getZoom(), 17), {animate:true});
+      markers[n].openPopup();
+      $("map").scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  });
+  $("playall").addEventListener("click", playAll);
+  $("playintro").addEventListener("click", sayIntro);
+  $("nowstop").addEventListener("click", stopAll);
+  $("locate").addEventListener("click", locate);
+  window.addEventListener("pagehide", function(){ if(synth){ try{ synth.cancel(); }catch(e){} } });
+})();
+</script>
+</body>
+</html>
