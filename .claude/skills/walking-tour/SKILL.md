@@ -77,8 +77,10 @@ If Wikipedia yields fewer than N good candidates, widen the radius **once** (120
 4000) and search again. If still short, top up from your own knowledge of the town, using coordinates
 you are confident about, and mark those stops `"source": "knowledge"`.
 
-Strip the `?utm_source=...` tracking query string off any `upload.wikimedia.org` image URL before
-using it. A stop with no Wikipedia image gets `"image": null` and the page draws a styled placeholder.
+Use the **`thumbnail.source`** URL exactly as the API returns it (from `pithumbsize=800`; the host is usually `thumb.wikimedia.org` and the width may snap to 960), never `original.source` and never a hand-built thumb URL, which returns 400.
+Originals are often 3000 px and close to 1 MB each, which is the wrong thing to send to a phone on
+patchy Highland signal. Strip the `?utm_source=...` tracking query string off any
+`upload.wikimedia.org` image URL before using it. A stop with no Wikipedia image gets `"image": null` and the page draws a styled placeholder.
 **Never invent an image URL.**
 
 ## 4. Order the stops
