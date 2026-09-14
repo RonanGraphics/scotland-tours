@@ -28,6 +28,24 @@ body{
 .wrap{max-width:720px;margin:0 auto;padding:0 16px}
 h1{font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;
    font-size:30px;line-height:1.2;margin:0}
+
+/* ---------- browser bar ---------- */
+#browserbar{display:none;background:var(--navy);color:var(--cream);padding:12px 0}
+#browserbar.on{display:block}
+#browserbar [hidden]{display:none}
+#browserbar p{margin:0;font-size:14px;color:var(--cream)}
+#browserbar .bb-btns{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
+#browserbar .bb-btn{font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 16px;
+  border-radius:8px;border:1px solid var(--gold);background:var(--gold);color:var(--navy);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto;
+  text-decoration:none;-webkit-tap-highlight-color:transparent}
+#browserbar .bb-btn:active{transform:translateY(1px)}
+#bb-hint{margin:10px 0 0;font-size:13px;color:var(--thistle)}
+#bb-url{display:block;width:100%;min-height:44px;margin:10px 0 0;padding:10px 12px;
+  font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--gold);
+  background:var(--cream);color:var(--navy)}
+@media (max-width:400px){ #browserbar .bb-btn{flex:1 1 100%} }
+
 header{background:var(--navy);color:#fff;padding:26px 0 22px}
 header p{margin:8px 0 0;color:var(--thistle);font-size:15px}
 .tartan{height:6px;background:repeating-linear-gradient(90deg,
@@ -48,6 +66,19 @@ footer a{color:var(--muted)}
 </style>
 </head>
 <body>
+
+<div id="browserbar">
+  <div class="wrap">
+    <p>Audio needs a full browser. Open this page in:</p>
+    <div class="bb-btns">
+      <a id="bb-chrome" class="bb-btn" href="#">Chrome</a>
+      <a id="bb-edge" class="bb-btn" href="#">Edge</a>
+      <button id="bb-copy" class="bb-btn" type="button">Copy link</button>
+    </div>
+    <p id="bb-hint" hidden>Did not open? Tap Copy link, then paste it into Chrome.</p>
+    <input id="bb-url" type="text" readonly hidden aria-label="Page address">
+  </div>
+</div>
 
 <header>
   <div class="wrap">
@@ -71,5 +102,70 @@ footer a{color:var(--muted)}
   &middot; Routing <a href="https://project-osrm.org/">OSRM</a>
 </footer>
 
+<script>
+(function(){
+  "use strict";
+
+  function init(){
+    var bar = document.getElementById("browserbar");
+    if (!bar) return;
+
+    /* only in an in-app WebView, or anywhere speech is missing */
+    var ua = navigator.userAgent || "";
+    var android = /Android/i.test(ua);
+    var noTts = !("speechSynthesis" in window);
+    var webview = android && (/\bwv\b/.test(ua) || noTts);
+    if (!(webview || noTts)) return;
+
+    function $(id){ return document.getElementById(id); }
+    var here = window.location;
+    var back = encodeURIComponent(here.href);
+    function intent(pkg){
+      return "intent://" + here.host + here.pathname + here.search +
+             "#Intent;scheme=https;package=" + pkg +
+             ";S.browser_fallback_url=" + back + ";end";
+    }
+
+    var chrome=$("bb-chrome"), edge=$("bb-edge"), copy=$("bb-copy"),
+        hint=$("bb-hint"), box=$("bb-url");
+
+    if (chrome) chrome.href = intent("com.android.chrome");
+    if (edge)   edge.href   = intent("com.microsoft.emmx");
+
+    function armHint(){
+      setTimeout(function(){
+        if (hint && document.visibilityState === "visible") hint.hidden = false;
+      }, 1500);
+    }
+    if (chrome) chrome.addEventListener("click", armHint);
+    if (edge)   edge.addEventListener("click", armHint);
+
+    function showBox(){
+      if (!box) return;
+      box.value = here.href;
+      box.hidden = false;
+      try { box.focus(); box.select(); } catch(e){}
+    }
+    if (copy) copy.addEventListener("click", function(){
+      function copied(){
+        copy.textContent = "Copied";
+        setTimeout(function(){ copy.textContent = "Copy link"; }, 2000);
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(here.href).then(copied, showBox);
+          return;
+        }
+      } catch(e){}
+      showBox();
+    });
+
+    bar.classList.add("on");
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
 </body>
 </html>

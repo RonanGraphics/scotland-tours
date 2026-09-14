@@ -190,6 +190,9 @@ Then tell Ian:
 - the index URL `https://ronangraphics.github.io/scotland-tours/`
 - that GitHub Pages takes about a minute to pick up the change
 
+Mention that if the link opens inside the Claude app, the bar at the top of the page has Open in
+Chrome / Open in Edge buttons; audio only works in a full browser.
+
 ## 9. Done when
 
 All of these, checked, not assumed:
