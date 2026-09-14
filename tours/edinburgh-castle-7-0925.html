@@ -99,6 +99,8 @@ button[disabled]{opacity:.5;cursor:default}
 /* ---------- geo bar ---------- */
 #geobar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0}
 #geostatus{font-size:14px;color:var(--muted);flex:1 1 180px;min-width:0}
+#geostatus.live{color:var(--navy);font-weight:600}
+@media (prefers-color-scheme:dark){ #geostatus.live{color:var(--cream)} }
 
 /* ---------- stop cards ---------- */
 .stop{background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -540,18 +542,20 @@ const TOUR = {
   }
 
   /* ---------- geolocation (user gesture only, never on load) ---------- */
-  var watchId=null;
+  var watchId=null, firstFix=true;
   function geoStatus(t){ $("geostatus").textContent=t; }
   function locate(){
     if (!navigator.geolocation){ geoStatus("This browser cannot share your location."); return; }
     if (watchId!==null){
-      navigator.geolocation.clearWatch(watchId); watchId=null;
+      navigator.geolocation.clearWatch(watchId); watchId=null; firstFix=true;
       if (map && meDot){ map.removeLayer(meDot); meDot=null; }
       if (map && meRing){ map.removeLayer(meRing); meRing=null; }
       $("locate").innerHTML="&#9678;&nbsp; Locate me";
+      $("geostatus").classList.remove("live");
       geoStatus("Location off. Tap “Locate me” to turn it back on.");
       return;
     }
+    $("geostatus").classList.add("live");
     geoStatus("Finding you…");
     $("locate").innerHTML="&#9678;&nbsp; Stop locating";
     watchId = navigator.geolocation.watchPosition(onPos, onGeoErr, {
@@ -575,14 +579,22 @@ const TOUR = {
       if (visited[n]) continue;
       if (typeof s.lat!=="number" || typeof s.lon!=="number") continue;
       var d=hav(la,lo,s.lat,s.lon);
-      if (!best || d<best.d) best={d:d,n:n,title:s.title};
+      if (!best || d<best.d) best={d:d,n:n,title:s.title,lat:s.lat,lon:s.lon};
+    }
+    if (firstFix && map){
+      if (best) map.fitBounds(L.latLngBounds([[la,lo],[best.lat,best.lon]]),{padding:[40,40],maxZoom:17});
+      else map.setView([la,lo],16);
+      firstFix=false;
     }
     if (!best) geoStatus("Every stop is marked visited. Well walked.");
+    else if (best.d>20000) geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title + ". Not there yet.");
     else geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title);
   }
   function onGeoErr(err){
     $("locate").innerHTML="&#9678;&nbsp; Locate me";
     if (watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
+    firstFix=true;
+    $("geostatus").classList.remove("live");
     var msg = "Could not get your location. Carry on with the map.";
     if (err && err.code===1) msg = "Location permission was declined. The tour works fine without it.";
     else if (err && err.code===2) msg = "No location signal here. Try again outdoors.";
