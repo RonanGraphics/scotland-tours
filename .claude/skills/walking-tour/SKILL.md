@@ -176,7 +176,7 @@ Insert one `<li>` at the top of `<ul id="tours">` (newest first), immediately af
 <span class="m">Edinburgh, Scotland &middot; 7 stops &middot; 14 September 2026</span></li>
 ```
 
-It stays a plain static list. No JavaScript on the index.
+It stays a plain static list. No JavaScript on the index beyond the browser bar that is already there; never remove it.
 
 ## 8. Commit and push
 
