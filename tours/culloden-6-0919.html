@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a">
+<title>Culloden, the Last Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --navy:#0b1f3a; --heather:#6b4c8a; --thistle:#b48ec6; --gold:#d4a63a; --cream:#faf7f0;
+  --bg:#faf7f0; --fg:#12233c; --card:#ffffff; --muted:#5a6675; --line:#e6ddca;
+  --shadow:0 1px 3px rgba(11,31,58,.12);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1f3a; --fg:#eef2f8; --card:#12294a; --muted:#9fb0c6; --line:#22406b;
+         --shadow:0 1px 3px rgba(0,0,0,.4); }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  background:var(--bg); color:var(--fg);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;line-height:1.2;margin:0}
+
+/* ---------- browser bar ---------- */
+#browserbar{display:none;background:var(--navy);color:var(--cream);padding:12px 0}
+#browserbar.on{display:block}
+#browserbar [hidden]{display:none}
+#browserbar p{margin:0;font-size:14px;color:var(--cream)}
+#browserbar .bb-btns{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
+#browserbar .bb-btn{font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 16px;
+  border-radius:8px;border:1px solid var(--gold);background:var(--gold);color:var(--navy);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto;
+  text-decoration:none;-webkit-tap-highlight-color:transparent}
+#browserbar .bb-btn:active{transform:translateY(1px)}
+#bb-hint{margin:10px 0 0;font-size:13px;color:var(--thistle)}
+#bb-url{display:block;width:100%;min-height:44px;margin:10px 0 0;padding:10px 12px;
+  font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--gold);
+  background:var(--cream);color:var(--navy)}
+@media (max-width:400px){ #browserbar .bb-btn{flex:1 1 100%} }
+
+/* ---------- header ---------- */
+header{background:var(--navy);color:#fff;padding:22px 0 0}
+header h1{font-size:28px;letter-spacing:.2px}
+.loc{font-size:15px;color:var(--thistle);margin:6px 0 0}
+.meta{font-size:14px;color:#cdd8e6;margin:10px 0 0}
+.badge{display:inline-block;margin:12px 0 0;padding:4px 12px;border-radius:999px;
+  background:var(--gold);color:var(--navy);font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.09em}
+.headbtns{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 18px}
+.tartan{height:6px;background:repeating-linear-gradient(90deg,
+  #0b1f3a 0 14px,#6b4c8a 14px 22px,#0b1f3a 22px 26px,
+  #d4a63a 26px 29px,#0b1f3a 29px 40px,#b48ec6 40px 46px,#0b1f3a 46px 52px)}
+
+/* ---------- buttons ---------- */
+button,.btn{
+  font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 16px;
+  border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  text-decoration:none;-webkit-tap-highlight-color:transparent;
+}
+button:active,.btn:active{transform:translateY(1px)}
+.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.45)}
+button[disabled]{opacity:.5;cursor:default}
+
+/* ---------- intro ---------- */
+#intro{padding:22px 0 4px}
+#intro p{margin:0 0 14px;font-size:17px}
+
+/* ---------- map ---------- */
+#map{height:45vh;min-height:280px;width:100%;background:var(--line);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);z-index:0}
+.pin{background:none;border:none}
+.pin span{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  font-weight:700;font-size:15px;border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.pin.done span{background:#b9c2cd;color:#4a5564}
+.me{background:none;border:none}
+.me i{display:block;width:16px;height:16px;border-radius:50%;background:#1e7bf0;
+  border:2px solid #fff;animation:pulse 1.8s infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(30,123,240,.55)}
+  70%{box-shadow:0 0 0 16px rgba(30,123,240,0)}
+  100%{box-shadow:0 0 0 0 rgba(30,123,240,0)}}
+.leaflet-popup-content{font-size:14px;margin:10px 12px}
+.leaflet-popup-content b{font-family:"Playfair Display",Georgia,serif}
+
+/* ---------- geo bar ---------- */
+#geobar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0}
+#geostatus{font-size:14px;color:var(--muted);flex:1 1 180px;min-width:0}
+#geostatus.live{color:var(--navy);font-weight:600}
+@media (prefers-color-scheme:dark){ #geostatus.live{color:var(--cream)} }
+
+/* ---------- stop cards ---------- */
+.stop{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);margin:0 0 18px;overflow:hidden}
+.stop.visited{opacity:.62}
+.stop.visited .num{background:#b9c2cd;color:#4a5564}
+.stophead{display:flex;gap:12px;align-items:flex-start;padding:16px 16px 0}
+.num{flex:none;width:44px;height:44px;min-height:44px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;
+  border:none;padding:0;font-family:"Playfair Display",Georgia,serif}
+.stophead h2{font-size:21px;margin:4px 0 0;min-width:0;overflow-wrap:break-word}
+.teaser{color:var(--muted);font-size:15px;font-style:italic;margin:10px 16px 0}
+.shot{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:14px 0 0;background:var(--line)}
+.ph{width:100%;aspect-ratio:16/10;margin:14px 0 0;display:flex;align-items:center;justify-content:center;
+  gap:14px;background:linear-gradient(135deg,var(--navy),var(--heather));color:var(--gold)}
+.ph b{font-family:"Playfair Display",Georgia,serif;font-size:56px;line-height:1}
+.credit{display:block;font-size:11px;color:var(--muted);padding:6px 16px 0;text-align:right}
+.credit a{color:var(--muted)}
+.narr{margin:14px 16px 0;font-size:16.5px}
+.tip{margin:14px 16px 0;padding:11px 14px;border-left:3px solid var(--heather);
+  background:rgba(107,76,138,.09);border-radius:0 8px 8px 0;font-size:14.5px}
+.tip b{color:var(--heather)}
+.row{display:flex;gap:10px;flex-wrap:wrap;padding:16px}
+.visited-tick{color:var(--heather);font-weight:700}
+
+/* ---------- now playing ---------- */
+#now{position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--navy);color:#fff;
+  display:none;align-items:center;gap:12px;padding:12px 16px;
+  box-shadow:0 -2px 12px rgba(0,0,0,.3);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+#now.on{display:flex}
+#nowtxt{flex:1 1 auto;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.playing{padding-bottom:76px}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);margin-top:10px;padding:20px 0 34px;
+  font-size:12.5px;color:var(--muted);text-align:center}
+footer a{color:var(--muted)}
+.fallback{padding:40px 0;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="browserbar">
+  <div class="wrap">
+    <p>Audio needs a full browser. Open this page in:</p>
+    <div class="bb-btns">
+      <a id="bb-chrome" class="bb-btn" href="#">Chrome</a>
+      <a id="bb-edge" class="bb-btn" href="#">Edge</a>
+      <button id="bb-copy" class="bb-btn" type="button">Copy link</button>
+    </div>
+    <p id="bb-hint" hidden>Did not open? Tap Copy link, then paste it into Chrome.</p>
+    <input id="bb-url" type="text" readonly hidden aria-label="Page address">
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <h1 id="t-title">&nbsp;</h1>
+    <p class="loc" id="t-loc"></p>
+    <p class="meta" id="t-meta"></p>
+    <span class="badge" id="t-flavour" hidden></span>
+    <div class="headbtns">
+      <button id="playall" class="btn-gold" type="button">&#9654;&nbsp; Play whole tour</button>
+      <button id="locate" class="btn-ghost" type="button">&#9678;&nbsp; Locate me</button>
+    </div>
+  </div>
+  <div class="tartan"></div>
+</header>
+
+<main>
+  <section id="intro" class="wrap"></section>
+  <div id="map"></div>
+  <div id="geobar" class="wrap"><span id="geostatus">Tap &ldquo;Locate me&rdquo; to see how far you are from the next stop.</span></div>
+  <section id="stops" class="wrap"></section>
+</main>
+
+<footer class="wrap"><span id="foot"></span></footer>
+
+<div id="now"><span id="nowtxt"></span><button id="nowstop" type="button">&#9632;&nbsp; Stop</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const TOUR = {"slug": "culloden-6-0919", "title": "Culloden, the Last Battle", "location": "Culloden Moor, near Inverness", "intro": "A walk across the battlefield of Culloden, from the visitor centre through the government lines to the memorial cairn, the clan graves and the Jacobite line, following the story of the sixteenth of April seventeen forty six. About a kilometre on level paths, taking around an hour with the stops, on an exposed moor where the wind never stops.", "flavour": "history", "generated": "2026-09-19", "anchor": {"lat": 57.4767, "lon": -4.0872}, "totalKm": 0.72, "estMinutes": 59, "stops": [{"n": 1, "title": "Culloden Visitor Centre", "teaser": "The last pitched battle fought on British soil, over in less than an hour on a cold April morning.", "narration": "Before you walk out onto the moor, take a moment to get the shape of the day in your head. On the sixteenth of April seventeen forty six, two armies met on this stretch of boggy upland east of Inverness. On one side stood the Jacobites, about five thousand exhausted and hungry men under Charles Edward Stuart, Bonnie Prince Charlie, who was twenty five years old and trying to win back the British throne for his father. On the other stood a government army of around eight thousand, well fed, well drilled and well supplied, under the Duke of Cumberland, the King's younger son, who was also twenty five. The night before, the Jacobites had tried a surprise march on Cumberland's camp at Nairn and turned back in the dark, so many of them had not slept or eaten in two days. The battle began around one in the afternoon and was effectively over within the hour. Somewhere between fifteen hundred and two thousand Jacobites were killed on the field and in the pursuit. The government army lost about fifty dead. Look at the building around you. It was opened in two thousand and seven by the National Trust for Scotland and was deliberately sunk low into the landscape so that it does not intrude on the field. Now go out through the doors to the small thatched cottage just beyond, Leanach Cottage.", "tip": "The battlefield itself is open and free at all times. The visitor centre, with its exhibition and the immersive battle film, charges admission and has a cafe and toilets. The moor is exposed, so take a waterproof whatever the forecast says.", "lat": 57.4767, "lon": -4.0872, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Battle_of_Culloden", "source": "knowledge"}, {"n": 2, "title": "Leanach Cottage", "teaser": "A thatched Highland cottage that stood among the government lines, and a dark story from the day after.", "narration": "This low cottage with its heather thatch is the only building left on the battlefield, and it stood roughly here on the day, almost in the middle of the government position. Old Leanach farm was a small cluster of turf and stone buildings, and the family who lived here would have watched two armies form up across their fields. After the battle, government surgeons used the cottage to treat their own wounded. A far grimmer story attaches to a barn that stood nearby. According to accounts written down afterwards, around thirty wounded Jacobites who had crawled inside it for shelter were locked in, and the barn was set alight. It is one of many stories of what happened in the hours and days after the fighting that earned Cumberland the name Butcher. The cottage was lived in until the early nineteen hundreds and then became the first place on the field where visitors could learn about the battle, long before there was a proper visitor centre. Look for the thickness of the walls and the tiny windows, built to keep out a wind that has not changed in nearly three hundred years, and for the heather thatch, which was renewed by hand using traditional methods. Now walk west along the path and look for the line of red flags stretching across the moor. That is where the government army stood.", "tip": null, "lat": 57.477, "lon": -4.0885, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Battle_of_Culloden", "source": "knowledge"}, {"n": 3, "title": "The government front line", "teaser": "Red flags mark where Cumberland's redcoats stood in three long ranks and waited.", "narration": "Stand beside one of the red flags and look west across the moor. This is what Cumberland's infantry saw, a wide open stretch of heather and bog with the Jacobite army drawn up about five hundred metres away. The government line was made up of fifteen battalions of regular infantry, most of them English regiments but also Scots, including the Royal Scots and Campbell militia from Argyll. They stood three ranks deep with cannon between the battalions, and they had been drilled for months in a new bayonet technique, each man thrusting not at the enemy in front of him but at the one to his right, under the raised sword arm. When the Jacobites finally charged, the artillery switched from round shot to grapeshot and the muskets fired in rolling volleys, and the charge came in on the left of this line, which is towards the visitor centre end, where Barrell's and Munro's regiments took the brunt of it. Barrell's lost a third of its men in hand to hand fighting and was almost broken before the second line closed the gap. Look at the ground between the lines. It is still boggy in places, and the Jacobites had to cross it under fire. Now follow the path west along the old road towards the tall stone cairn, the memorial to the dead.", "tip": null, "lat": 57.4775, "lon": -4.0905, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Battle_of_Culloden", "source": "knowledge"}, {"n": 4, "title": "The Memorial Cairn and the Well of the Dead", "teaser": "A Victorian cairn on the spot where the fighting was fiercest, beside a spring where a chief fell.", "narration": "This great cairn of rough stones stands where the Jacobite charge crashed into the government left, the point of the whole battle. It was built in eighteen eighty one by Duncan Forbes of Culloden, whose family owned the land and whose ancestor, ironically, had been the leading government supporter in the Highlands in seventeen forty six. By then the site had been neglected for over a century, and Forbes decided the dead deserved marking. The cairn is about six metres high, and the inscription tells you that the graves of the gallant Highlanders who fought for Scotland and Prince Charlie are marked by the names of their clans. Now look for the small stone lined spring a few paces away, the Well of the Dead. The stone beside it says that here the chief of the MacGillivrays fell. That was Alexander MacGillivray of Dunmaglass, a tall young man who led the Clan Chattan regiment in the charge and got further into the government lines than almost anyone, before he was cut down and died, so the story goes, reaching for the water. The well was said to be choked with bodies after the battle, and for a long time nobody would drink from it. It is a place that still stops people in their tracks. The clan gravestones lie just beyond it along the path.", "tip": null, "lat": 57.4777, "lon": -4.0925, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Battle_of_Culloden", "source": "knowledge"}, {"n": 5, "title": "The clan graves", "teaser": "Low grassy mounds and simple headstones where the Highland dead were buried by clan.", "narration": "Slow down here, because you are walking among graves. The low grass covered mounds on either side of the path are where the Jacobite dead were buried in the days after the battle, dragged into pits by local people and by government soldiers and laid in the ground by the clan they had fought beside. The rough headstones with names carved on them were put up by Duncan Forbes in eighteen eighty one at the same time as the cairn. Look for the stones of Clan Fraser, Clan Mackintosh, Clan Cameron, the Stewarts of Appin, the MacGillivrays and the MacLeans, and for the one that simply says Mixed Clans, for the men who could not be told apart. There is a separate stone marked Field of the English, said to mark the government graves, though modern archaeologists doubt that many were buried there. The size of the mounds tells its own story. Some of the clan regiments lost half their men in a few minutes. Visitors still leave white roses and small tokens on the stones, and on the anniversary every April a commemoration is held here with pipers and wreaths. Trees were planted over this field in the nineteenth century and only cleared in the nineteen eighties, and the road that once ran through the graves was moved at the same time. Now walk on west to the blue flags, the Jacobite line.", "tip": "These are mass graves. Please keep to the path and do not walk on the mounds.", "lat": 57.4781, "lon": -4.0932, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Battle_of_Culloden", "source": "knowledge"}, {"n": 6, "title": "The Jacobite front line", "teaser": "Blue flags mark where the clans stood under cannon fire before the charge that ended a dream.", "narration": "Stand at a blue flag and look east, back the way you came. This is the view the clansmen had, the red line of the government army across five hundred metres of open bog, with the stone walls of the Culwhiniac enclosure on their right hand. For nearly half an hour the Jacobites stood here while Cumberland's guns fired into them and their own few cannon barely answered, and men begged for the order to charge. When it finally came, the right wing went first, the Atholl men, the Camerons, the Appin Stewarts and Clan Chattan, and they veered to the right as they ran, crowding together, so that the charge hit the government left in a bunched mass while the MacDonalds on the far left, who were sulking because they had been denied the traditional place of honour on the right, hardly got to grips at all. Within minutes it was over. Charles was led from the field and spent the next five months on the run through the Highlands and the Hebrides, helped by Flora MacDonald, before a French ship took him away for good. What followed was worse than the battle. The government hunted down the survivors, burned houses and drove off cattle, and Parliament banned the carrying of arms and the wearing of Highland dress for nearly forty years. Look back across the moor once more, then follow the path east to the visitor centre.", "tip": null, "lat": 57.4781, "lon": -4.0985, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Jacobite_rising_of_1745", "source": "knowledge"}]};
+</script>
+<script>
+(function(){
+  "use strict";
+
+  if (typeof TOUR === "undefined" || !TOUR || !TOUR.stops) {
+    document.getElementById("stops").innerHTML =
+      '<p class="fallback">This is the blank tour template. Generate a tour with the walking-tour skill.</p>';
+    return;
+  }
+
+  var stops = TOUR.stops || [];
+
+  /* ---------- helpers ---------- */
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function hav(aLat,aLon,bLat,bLon){            /* metres */
+    var R=6371000, r=Math.PI/180;
+    var p1=aLat*r, p2=bLat*r, dp=(bLat-aLat)*r, dl=(bLon-aLon)*r;
+    var h=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+  function far(m){ return m<1000 ? Math.round(m/10)*10+" m" : (m/1000).toFixed(1)+" km"; }
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------- storage (guarded) ---------- */
+  var KEY = "scotland-tours:visited:" + (TOUR.slug || "tour");
+  var store = (function(){
+    try { var t="__t"; window.localStorage.setItem(t,t); window.localStorage.removeItem(t); return window.localStorage; }
+    catch(e){ return null; }
+  })();
+  function loadVisited(){
+    if(!store) return {};
+    try { var v=JSON.parse(store.getItem(KEY)||"[]"), o={}; for(var i=0;i<v.length;i++) o[v[i]]=true; return o; }
+    catch(e){ return {}; }
+  }
+  function saveVisited(){
+    if(!store) return;
+    var a=[]; for(var k in visited){ if(visited[k]) a.push(Number(k)); }
+    try { store.setItem(KEY, JSON.stringify(a)); } catch(e){}
+  }
+  var visited = loadVisited();
+
+  /* ---------- header ---------- */
+  document.title = (TOUR.title || "Walking tour");
+  $("t-title").textContent = TOUR.title || "Walking tour";
+  $("t-loc").textContent   = TOUR.location || "";
+  $("t-meta").textContent  = stops.length + " stops · " +
+      (Number(TOUR.totalKm)||0).toFixed(1) + " km · about " + (TOUR.estMinutes||0) + " min";
+  if (TOUR.flavour){ var fb=$("t-flavour"); fb.textContent=TOUR.flavour; fb.hidden=false; }
+  $("foot").innerHTML = "Generated " + esc(TOUR.generated||"") +
+    ' · Map &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>' +
+    ' · Photos <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>' +
+    ' · Routing <a href="https://project-osrm.org/" target="_blank" rel="noopener">OSRM</a>';
+
+  /* ---------- intro ---------- */
+  $("intro").innerHTML = '<p id="introtxt"></p><button id="playintro" type="button">&#9654;&nbsp; Play intro</button>';
+  $("introtxt").textContent = TOUR.intro || "";
+
+  /* ---------- stop cards ---------- */
+  var THISTLE = '<svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M12 21c0-5-1-7-1-9"/><path d="M8.5 6.2C8.5 4.4 10 3 12 3s3.5 1.4 3.5 3.2"/>' +
+    '<path d="M8.6 6h6.8c0 2.7-1.5 4.6-3.4 4.6S8.6 8.7 8.6 6z"/>' +
+    '<path d="M9.4 5.4 8 2.6M12 5.1V2M14.6 5.4 16 2.6"/>' +
+    '<path d="M11 14c-2.2.3-3.8 1.9-4.2 4M13 14c2.2.3 3.8 1.9 4.2 4"/></svg>';
+
+  var html = "";
+  for (var i=0;i<stops.length;i++){
+    var s = stops[i], n = s.n || (i+1), done = !!visited[n];
+    html += '<article class="stop'+(done?' visited':'')+'" id="stop-'+n+'" data-n="'+n+'">';
+    html += '<div class="stophead"><button class="num" type="button" data-act="map" data-n="'+n+'" ' +
+            'aria-label="Show stop '+n+' on the map">'+n+'</button><h2>'+esc(s.title)+'</h2></div>';
+    if (s.teaser) html += '<p class="teaser">'+esc(s.teaser)+'</p>';
+    if (s.image){
+      html += '<img class="shot" loading="lazy" decoding="async" src="'+esc(s.image)+'" alt="'+esc(s.title)+'">';
+      html += '<span class="credit"><a href="'+esc(s.wiki||"#")+'" target="_blank" rel="noopener">'+
+              esc(s.imageCredit||"Wikimedia Commons")+'</a></span>';
+    } else {
+      html += '<div class="ph" aria-hidden="true"><b>'+n+'</b>'+THISTLE+'</div>';
+    }
+    html += '<p class="narr">'+esc(s.narration)+'</p>';
+    if (s.tip) html += '<p class="tip"><b>Tip.</b> '+esc(s.tip)+'</p>';
+    html += '<div class="row">';
+    html += '<button type="button" data-act="say" data-n="'+n+'">&#9654;&nbsp; Listen</button>';
+    html += '<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination='+
+            encodeURIComponent(s.lat+","+s.lon)+'&amp;travelmode=walking">&#10152;&nbsp; Directions</a>';
+    html += '<button type="button" data-act="visit" data-n="'+n+'">'+
+            (done?'<span class="visited-tick">&#10003;</span>&nbsp; Visited':'&#9711;&nbsp; Mark visited')+'</button>';
+    html += '</div></article>';
+  }
+  $("stops").innerHTML = html;
+
+  function paintCard(n){
+    var card=$("stop-"+n); if(!card) return;
+    var done=!!visited[n];
+    card.className = "stop"+(done?" visited":"");
+    var b=card.querySelector('[data-act="visit"]');
+    if(b) b.innerHTML = done ? '<span class="visited-tick">&#10003;</span>&nbsp; Visited'
+                             : '&#9711;&nbsp; Mark visited';
+    if(markers[n] && markers[n].getElement && markers[n].getElement())
+      markers[n].getElement().classList.toggle("done", done);
+  }
+
+  /* ---------- map ---------- */
+  var map=null, markers={}, meDot=null, meRing=null;
+  if (window.L && stops.length){
+    map = L.map("map",{scrollWheelZoom:false});
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var pts=[];
+    for (var j=0;j<stops.length;j++){
+      var st=stops[j], nn=st.n||(j+1);
+      if (typeof st.lat!=="number" || typeof st.lon!=="number") continue;
+      pts.push([st.lat, st.lon]);
+      var mk = L.marker([st.lat,st.lon],{
+        icon: L.divIcon({className:"pin"+(visited[nn]?" done":""), html:"<span>"+nn+"</span>",
+                         iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-16]})
+      }).addTo(map);
+      mk.bindPopup("<b>"+esc(st.title)+"</b><br>Stop "+nn);
+      (function(num){
+        mk.on("click", function(){ var c=$("stop-"+num); if(c) c.scrollIntoView({behavior:"smooth",block:"start"}); });
+      })(nn);
+      markers[nn]=mk;
+    }
+    if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.18));
+
+    /* straight-line fallback drawn only if OSRM does not answer */
+    var routed=false;
+    function straight(){
+      if (routed || pts.length<2) return;
+      routed=true;
+      L.polyline(pts,{color:"#6b4c8a",weight:4,opacity:.8,dashArray:"7 7"}).addTo(map);
+    }
+    if (pts.length>1 && typeof window.fetch==="function"){
+      var coords=[]; for (var k=0;k<pts.length;k++) coords.push(pts[k][1]+","+pts[k][0]);
+      var url="https://router.project-osrm.org/route/v1/foot/"+coords.join(";")+"?overview=full&geometries=geojson";
+      var ctrl = (typeof AbortController==="function") ? new AbortController() : null;
+      var timer = setTimeout(function(){ if(ctrl){ try{ ctrl.abort(); }catch(e){} } straight(); }, 6000);
+      fetch(url, ctrl?{signal:ctrl.signal}:{})
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(new Error("osrm")); })
+        .then(function(d){
+          clearTimeout(timer);
+          var g = d && d.routes && d.routes[0] && d.routes[0].geometry;
+          if (routed || !g || !g.coordinates || !g.coordinates.length) { straight(); return; }
+          routed=true;
+          var line=[]; for (var m=0;m<g.coordinates.length;m++) line.push([g.coordinates[m][1], g.coordinates[m][0]]);
+          L.polyline(line,{color:"#6b4c8a",weight:5,opacity:.85}).addTo(map);
+        })
+        .catch(function(){ clearTimeout(timer); straight(); });
+    } else {
+      straight();
+    }
+  }
+
+  /* ---------- speech ---------- */
+  var synth = ("speechSynthesis" in window) ? window.speechSynthesis : null;
+  var voice=null, queue=[], qi=-1, single=-1;
+
+  function pickVoice(){
+    if(!synth || !synth.getVoices) return;
+    var vs = synth.getVoices() || [], i;
+    for (i=0;i<vs.length;i++) if (/scot/i.test(vs[i].name||"")) { voice=vs[i]; return; }
+    for (i=0;i<vs.length;i++) if ((vs[i].lang||"").toLowerCase().replace("_","-")==="en-gb") { voice=vs[i]; return; }
+    voice=null;
+  }
+  if (synth){ pickVoice(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice; }
+
+  function resetButtons(){
+    var bs=document.querySelectorAll('[data-act="say"]'), i;
+    for(i=0;i<bs.length;i++) bs[i].innerHTML="&#9654;&nbsp; Listen";
+    var pi=$("playintro"); if(pi) pi.innerHTML="&#9654;&nbsp; Play intro";
+    $("playall").innerHTML="&#9654;&nbsp; Play whole tour";
+  }
+  function showNow(txt){
+    var bar=$("now");
+    if (txt){ $("nowtxt").textContent=txt; bar.classList.add("on"); document.body.classList.add("playing"); }
+    else { bar.classList.remove("on"); document.body.classList.remove("playing"); }
+  }
+  function stopAll(){
+    queue=[]; qi=-1; single=-1;
+    if (synth) { try{ synth.cancel(); }catch(e){} }
+    resetButtons(); showNow("");
+  }
+  function utter(text, onend){
+    if (!synth) return false;
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate=0.95; u.lang="en-GB";
+    if (voice) u.voice=voice;
+    u.onend = onend || null;
+    u.onerror = onend || null;
+    try { synth.speak(u); } catch(e){ return false; }
+    return true;
+  }
+  function noSpeech(){
+    showNow("Speech is not available on this browser.");
+    setTimeout(function(){ showNow(""); }, 3000);
+  }
+
+  function sayOne(n){
+    if (!synth) { noSpeech(); return; }
+    if (single === n){ stopAll(); return; }
+    stopAll();
+    var s=null; for (var i=0;i<stops.length;i++) if ((stops[i].n||(i+1))===n) s=stops[i];
+    if (!s) return;
+    single = n;
+    var btn = document.querySelector('[data-act="say"][data-n="'+n+'"]');
+    if (btn) btn.innerHTML="&#9632;&nbsp; Stop";
+    showNow("Now playing: stop " + n);
+    utter((s.title||"") + ". " + (s.narration||""), function(){
+      if (single===n){ single=-1; resetButtons(); showNow(""); }
+    });
+  }
+  function sayIntro(){
+    if (!synth) { noSpeech(); return; }
+    if (single === 0){ stopAll(); return; }
+    stopAll(); single = 0;
+    $("playintro").innerHTML="&#9632;&nbsp; Stop";
+    showNow("Now playing: introduction");
+    utter(TOUR.intro || "", function(){
+      if (single===0){ single=-1; resetButtons(); showNow(""); }
+    });
+  }
+  function step(){
+    if (qi < 0 || qi >= queue.length){ stopAll(); return; }
+    var item = queue[qi];
+    showNow("Now playing: " + item.label);
+    if (item.scroll){ var c=$("stop-"+item.scroll); if(c) c.scrollIntoView({behavior:"smooth",block:"start"}); }
+    utter(item.text, function(){ if(qi<0) return; qi++; step(); });
+  }
+  function playAll(){
+    if (!synth) { noSpeech(); return; }
+    if (qi > -1){ stopAll(); return; }
+    stopAll();
+    queue = [{label:"introduction", text:TOUR.intro||"", scroll:0}];
+    for (var i=0;i<stops.length;i++){
+      var s=stops[i], n=s.n||(i+1);
+      queue.push({label:"stop "+n+" · "+(s.title||""), text:(s.title||"")+". "+(s.narration||""), scroll:n});
+    }
+    qi = 0;
+    $("playall").innerHTML="&#9632;&nbsp; Stop tour";
+    step();
+  }
+
+  /* ---------- geolocation (user gesture only, never on load) ---------- */
+  var watchId=null, firstFix=true;
+  function geoStatus(t){ $("geostatus").textContent=t; }
+  function locate(){
+    if (!navigator.geolocation){ geoStatus("This browser cannot share your location."); return; }
+    if (watchId!==null){
+      navigator.geolocation.clearWatch(watchId); watchId=null; firstFix=true;
+      if (map && meDot){ map.removeLayer(meDot); meDot=null; }
+      if (map && meRing){ map.removeLayer(meRing); meRing=null; }
+      $("locate").innerHTML="&#9678;&nbsp; Locate me";
+      $("geostatus").classList.remove("live");
+      geoStatus("Location off. Tap “Locate me” to turn it back on.");
+      return;
+    }
+    $("geostatus").classList.add("live");
+    geoStatus("Finding you…");
+    $("locate").innerHTML="&#9678;&nbsp; Stop locating";
+    watchId = navigator.geolocation.watchPosition(onPos, onGeoErr, {
+      enableHighAccuracy:true, maximumAge:5000, timeout:20000
+    });
+  }
+  function onPos(pos){
+    var la=pos.coords.latitude, lo=pos.coords.longitude, acc=pos.coords.accuracy||0;
+    if (map){
+      if (!meDot){
+        meDot = L.marker([la,lo],{icon:L.divIcon({className:"me",html:"<i></i>",iconSize:[16,16],iconAnchor:[8,8]}),
+                                  zIndexOffset:1000}).addTo(map);
+        meRing = L.circle([la,lo],{radius:acc,color:"#1e7bf0",weight:1,fillColor:"#1e7bf0",fillOpacity:.10}).addTo(map);
+      } else {
+        meDot.setLatLng([la,lo]); meRing.setLatLng([la,lo]); meRing.setRadius(acc);
+      }
+    }
+    var best=null;
+    for (var i=0;i<stops.length;i++){
+      var s=stops[i], n=s.n||(i+1);
+      if (visited[n]) continue;
+      if (typeof s.lat!=="number" || typeof s.lon!=="number") continue;
+      var d=hav(la,lo,s.lat,s.lon);
+      if (!best || d<best.d) best={d:d,n:n,title:s.title,lat:s.lat,lon:s.lon};
+    }
+    if (firstFix && map){
+      if (best) map.fitBounds(L.latLngBounds([[la,lo],[best.lat,best.lon]]),{padding:[40,40],maxZoom:17});
+      else map.setView([la,lo],16);
+      firstFix=false;
+    }
+    if (!best) geoStatus("Every stop is marked visited. Well walked.");
+    else if (best.d>20000) geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title + ". Not there yet.");
+    else geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title);
+  }
+  function onGeoErr(err){
+    $("locate").innerHTML="&#9678;&nbsp; Locate me";
+    if (watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
+    firstFix=true;
+    $("geostatus").classList.remove("live");
+    var msg = "Could not get your location. Carry on with the map.";
+    if (err && err.code===1) msg = "Location permission was declined. The tour works fine without it.";
+    else if (err && err.code===2) msg = "No location signal here. Try again outdoors.";
+    else if (err && err.code===3) msg = "Location is taking too long. Try again in a moment.";
+    geoStatus(msg);
+  }
+
+  /* ---------- events (delegated) ---------- */
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest ? ev.target.closest("[data-act]") : null;
+    if (!b) return;
+    var n = Number(b.getAttribute("data-n")), act = b.getAttribute("data-act");
+    if (act==="say")   { sayOne(n); }
+    else if (act==="visit"){ visited[n] = !visited[n]; saveVisited(); paintCard(n); }
+    else if (act==="map")  {
+      if (!map || !markers[n]) return;
+      map.setView(markers[n].getLatLng(), Math.max(map.getZoom(), 17), {animate:true});
+      markers[n].openPopup();
+      $("map").scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  });
+  $("playall").addEventListener("click", playAll);
+  $("playintro").addEventListener("click", sayIntro);
+  $("nowstop").addEventListener("click", stopAll);
+  $("locate").addEventListener("click", locate);
+  window.addEventListener("pagehide", function(){ if(synth){ try{ synth.cancel(); }catch(e){} } });
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+
+  function init(){
+    var bar = document.getElementById("browserbar");
+    if (!bar) return;
+
+    /* only in an in-app WebView, or anywhere speech is missing */
+    var ua = navigator.userAgent || "";
+    var android = /Android/i.test(ua);
+    var noTts = !("speechSynthesis" in window);
+    var webview = android && (/\bwv\b/.test(ua) || noTts);
+    if (!(webview || noTts)) return;
+
+    function $(id){ return document.getElementById(id); }
+    var here = window.location;
+    var back = encodeURIComponent(here.href);
+    function intent(pkg){
+      return "intent://" + here.host + here.pathname + here.search +
+             "#Intent;scheme=https;package=" + pkg +
+             ";S.browser_fallback_url=" + back + ";end";
+    }
+
+    var chrome=$("bb-chrome"), edge=$("bb-edge"), copy=$("bb-copy"),
+        hint=$("bb-hint"), box=$("bb-url");
+
+    if (chrome) chrome.href = intent("com.android.chrome");
+    if (edge)   edge.href   = intent("com.microsoft.emmx");
+
+    function armHint(){
+      setTimeout(function(){
+        if (hint && document.visibilityState === "visible") hint.hidden = false;
+      }, 1500);
+    }
+    if (chrome) chrome.addEventListener("click", armHint);
+    if (edge)   edge.addEventListener("click", armHint);
+
+    function showBox(){
+      if (!box) return;
+      box.value = here.href;
+      box.hidden = false;
+      try { box.focus(); box.select(); } catch(e){}
+    }
+    if (copy) copy.addEventListener("click", function(){
+      function copied(){
+        copy.textContent = "Copied";
+        setTimeout(function(){ copy.textContent = "Copy link"; }, 2000);
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(here.href).then(copied, showBox);
+          return;
+        }
+      } catch(e){}
+      showBox();
+    });
+
+    bar.classList.add("on");
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+</body>
+</html>
