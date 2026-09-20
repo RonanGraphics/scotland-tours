@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a">
+<title>John o' Groats to Duncansby Head</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --navy:#0b1f3a; --heather:#6b4c8a; --thistle:#b48ec6; --gold:#d4a63a; --cream:#faf7f0;
+  --bg:#faf7f0; --fg:#12233c; --card:#ffffff; --muted:#5a6675; --line:#e6ddca;
+  --shadow:0 1px 3px rgba(11,31,58,.12);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1f3a; --fg:#eef2f8; --card:#12294a; --muted:#9fb0c6; --line:#22406b;
+         --shadow:0 1px 3px rgba(0,0,0,.4); }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  background:var(--bg); color:var(--fg);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700;line-height:1.2;margin:0}
+
+/* ---------- browser bar ---------- */
+#browserbar{display:none;background:var(--navy);color:var(--cream);padding:12px 0}
+#browserbar.on{display:block}
+#browserbar [hidden]{display:none}
+#browserbar p{margin:0;font-size:14px;color:var(--cream)}
+#browserbar .bb-btns{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
+#browserbar .bb-btn{font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 16px;
+  border-radius:8px;border:1px solid var(--gold);background:var(--gold);color:var(--navy);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto;
+  text-decoration:none;-webkit-tap-highlight-color:transparent}
+#browserbar .bb-btn:active{transform:translateY(1px)}
+#bb-hint{margin:10px 0 0;font-size:13px;color:var(--thistle)}
+#bb-url{display:block;width:100%;min-height:44px;margin:10px 0 0;padding:10px 12px;
+  font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--gold);
+  background:var(--cream);color:var(--navy)}
+@media (max-width:400px){ #browserbar .bb-btn{flex:1 1 100%} }
+
+/* ---------- header ---------- */
+header{background:var(--navy);color:#fff;padding:22px 0 0}
+header h1{font-size:28px;letter-spacing:.2px}
+.loc{font-size:15px;color:var(--thistle);margin:6px 0 0}
+.meta{font-size:14px;color:#cdd8e6;margin:10px 0 0}
+.badge{display:inline-block;margin:12px 0 0;padding:4px 12px;border-radius:999px;
+  background:var(--gold);color:var(--navy);font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.09em}
+.headbtns{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 18px}
+.tartan{height:6px;background:repeating-linear-gradient(90deg,
+  #0b1f3a 0 14px,#6b4c8a 14px 22px,#0b1f3a 22px 26px,
+  #d4a63a 26px 29px,#0b1f3a 29px 40px,#b48ec6 40px 46px,#0b1f3a 46px 52px)}
+
+/* ---------- buttons ---------- */
+button,.btn{
+  font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 16px;
+  border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  text-decoration:none;-webkit-tap-highlight-color:transparent;
+}
+button:active,.btn:active{transform:translateY(1px)}
+.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.45)}
+button[disabled]{opacity:.5;cursor:default}
+
+/* ---------- intro ---------- */
+#intro{padding:22px 0 4px}
+#intro p{margin:0 0 14px;font-size:17px}
+
+/* ---------- map ---------- */
+#map{height:45vh;min-height:280px;width:100%;background:var(--line);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);z-index:0}
+.pin{background:none;border:none}
+.pin span{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  font-weight:700;font-size:15px;border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.pin.done span{background:#b9c2cd;color:#4a5564}
+.me{background:none;border:none}
+.me i{display:block;width:16px;height:16px;border-radius:50%;background:#1e7bf0;
+  border:2px solid #fff;animation:pulse 1.8s infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(30,123,240,.55)}
+  70%{box-shadow:0 0 0 16px rgba(30,123,240,0)}
+  100%{box-shadow:0 0 0 0 rgba(30,123,240,0)}}
+.leaflet-popup-content{font-size:14px;margin:10px 12px}
+.leaflet-popup-content b{font-family:"Playfair Display",Georgia,serif}
+
+/* ---------- geo bar ---------- */
+#geobar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0}
+#geostatus{font-size:14px;color:var(--muted);flex:1 1 180px;min-width:0}
+#geostatus.live{color:var(--navy);font-weight:600}
+@media (prefers-color-scheme:dark){ #geostatus.live{color:var(--cream)} }
+
+/* ---------- stop cards ---------- */
+.stop{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);margin:0 0 18px;overflow:hidden}
+.stop.visited{opacity:.62}
+.stop.visited .num{background:#b9c2cd;color:#4a5564}
+.stophead{display:flex;gap:12px;align-items:flex-start;padding:16px 16px 0}
+.num{flex:none;width:44px;height:44px;min-height:44px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;
+  border:none;padding:0;font-family:"Playfair Display",Georgia,serif}
+.stophead h2{font-size:21px;margin:4px 0 0;min-width:0;overflow-wrap:break-word}
+.teaser{color:var(--muted);font-size:15px;font-style:italic;margin:10px 16px 0}
+.shot{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:14px 0 0;background:var(--line)}
+.ph{width:100%;aspect-ratio:16/10;margin:14px 0 0;display:flex;align-items:center;justify-content:center;
+  gap:14px;background:linear-gradient(135deg,var(--navy),var(--heather));color:var(--gold)}
+.ph b{font-family:"Playfair Display",Georgia,serif;font-size:56px;line-height:1}
+.credit{display:block;font-size:11px;color:var(--muted);padding:6px 16px 0;text-align:right}
+.credit a{color:var(--muted)}
+.narr{margin:14px 16px 0;font-size:16.5px}
+.tip{margin:14px 16px 0;padding:11px 14px;border-left:3px solid var(--heather);
+  background:rgba(107,76,138,.09);border-radius:0 8px 8px 0;font-size:14.5px}
+.tip b{color:var(--heather)}
+.row{display:flex;gap:10px;flex-wrap:wrap;padding:16px}
+.visited-tick{color:var(--heather);font-weight:700}
+
+/* ---------- now playing ---------- */
+#now{position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--navy);color:#fff;
+  display:none;align-items:center;gap:12px;padding:12px 16px;
+  box-shadow:0 -2px 12px rgba(0,0,0,.3);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+#now.on{display:flex}
+#nowtxt{flex:1 1 auto;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.playing{padding-bottom:76px}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);margin-top:10px;padding:20px 0 34px;
+  font-size:12.5px;color:var(--muted);text-align:center}
+footer a{color:var(--muted)}
+.fallback{padding:40px 0;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="browserbar">
+  <div class="wrap">
+    <p>Audio needs a full browser. Open this page in:</p>
+    <div class="bb-btns">
+      <a id="bb-chrome" class="bb-btn" href="#">Chrome</a>
+      <a id="bb-edge" class="bb-btn" href="#">Edge</a>
+      <button id="bb-copy" class="bb-btn" type="button">Copy link</button>
+    </div>
+    <p id="bb-hint" hidden>Did not open? Tap Copy link, then paste it into Chrome.</p>
+    <input id="bb-url" type="text" readonly hidden aria-label="Page address">
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <h1 id="t-title">&nbsp;</h1>
+    <p class="loc" id="t-loc"></p>
+    <p class="meta" id="t-meta"></p>
+    <span class="badge" id="t-flavour" hidden></span>
+    <div class="headbtns">
+      <button id="playall" class="btn-gold" type="button">&#9654;&nbsp; Play whole tour</button>
+      <button id="locate" class="btn-ghost" type="button">&#9678;&nbsp; Locate me</button>
+    </div>
+  </div>
+  <div class="tartan"></div>
+</header>
+
+<main>
+  <section id="intro" class="wrap"></section>
+  <div id="map"></div>
+  <div id="geobar" class="wrap"><span id="geostatus">Tap &ldquo;Locate me&rdquo; to see how far you are from the next stop.</span></div>
+  <section id="stops" class="wrap"></section>
+</main>
+
+<footer class="wrap"><span id="foot"></span></footer>
+
+<div id="now"><span id="nowtxt"></span><button id="nowstop" type="button">&#9632;&nbsp; Stop</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const TOUR = {"slug": "john-o-groats-6-0920", "title": "John o' Groats to Duncansby Head", "location": "John o' Groats, Caithness", "intro": "From the famous signpost and harbour at the end of the road, along the clifftops to the lighthouse at Duncansby Head and the great sea stacks beyond. About three and a half kilometres one way on paths and a quiet road, roughly an hour and three quarters with the stops, then the same distance back with the wind behind you.", "flavour": "general", "generated": "2026-09-20", "anchor": {"lat": 58.6437, "lon": -3.0703}, "totalKm": 3.41, "estMinutes": 99, "stops": [{"n": 1, "title": "The John o' Groats signpost", "teaser": "Eight hundred and seventy four miles from Land's End, and named after a Dutchman with a ferry.", "narration": "Here you are at the end of the road, or the beginning, depending on which way you are going. The white signpost with its fingers pointing to Land's End, eight hundred and seventy four miles away by road, is the most photographed thing in Caithness. It went up in nineteen sixty four as a paid photo opportunity, and the man in charge would fit your home town and the mileage onto a spare arm for a fee, until a permanent free one was put up in twenty fourteen. Every year thousands of walkers, cyclists and runners finish or start an end to end journey here, and if you wait a while you will probably see one arrive, tired and grinning. The name is the odd part. It comes from Jan de Groot, a Dutchman who was granted the right to run a ferry from here to Orkney in fourteen ninety six by King James the Fourth, a few years after Scotland had taken the islands from Norway. The story says his fare was a groat, an old coin worth four pence, hence the name, though that is probably a tale told afterwards. Look for the harbour just below you, still used by small boats, and look north across the water. That is the Pentland Firth, and the low island straight ahead is Stroma. Now walk the short distance to the white cottage on the shore, the Last House.", "tip": "The signpost is free to photograph and there is usually a queue in summer. Toilets, a cafe and a car park are beside the harbour.", "lat": 58.6437, "lon": -3.0703, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/John_o%27_Groats", "source": "knowledge"}, {"n": 2, "title": "The Last House and Jan de Groot's mound", "teaser": "A whitewashed cottage that claims to be the last in Scotland, and a grassy mound where a famous house stood.", "narration": "The low whitewashed cottage with the thick walls is the Last House in Scotland, which is a claim rather than a fact, since there are houses further north and further east, but nobody minds. It is a traditional Caithness cottage, built to keep its head down in the wind, and today it sells souvenirs and has a small display of old photographs of the village and its ferrymen. Look now for the grassy mound with a flagpole between the cottage and the big hotel. That marks the spot where Jan de Groot's house is said to have stood, and the house had a story. Jan's family grew, and his sons and their families quarrelled about who should sit at the head of the table. So he built an octagonal house with eight doors and an eight sided table in the middle, so that every branch of the family could come in by its own door and sit at its own head of the table, and peace was restored. The octagon has been the symbol of the village ever since, and you will see it repeated in the shape of the hotel tower behind you. Look at the tower and at the brightly coloured timber buildings beside it, and then walk towards them for the next stop.", "tip": null, "lat": 58.6441, "lon": -3.0714, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/John_o%27_Groats", "source": "knowledge"}, {"n": 3, "title": "The Inn at John o' Groats", "teaser": "A Victorian hotel that fell derelict, won a prize for ugliness, and came back in Nordic colours.", "narration": "This is the building that saved the village. The John o' Groats House Hotel was built in eighteen seventy five, with its octagonal tower a nod to Jan de Groot's house, to serve the first tourists who came by steamer and carriage to stand at the end of Britain. For a century it did well, and then it closed in nineteen ninety six and slowly fell apart. By twenty ten the village had become so shabby that it was given the Carbuncle Award for the most dismal place in Scotland, which stung. Within three years the hotel had been rescued, restored and reopened as the Inn at John o' Groats, with a row of brightly painted timber lodges added on in a style borrowed from Norway, in the strong colours you see now. People argued about them, and most have come round. Look at the contrast between the grey stone of the old hotel with its tower and the sharp modern shapes and colours of the new wing, and notice how the whole thing turns its face to the sea. Look too at the view north from the terrace, which is the reason the hotel was built here in the first place. Now walk down to the harbour and out onto the pier.", "tip": null, "lat": 58.6438, "lon": -3.0708, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/John_o%27_Groats", "source": "knowledge"}, {"n": 4, "title": "The harbour and the Pentland Firth", "teaser": "One of the most dangerous stretches of water in the world, with an abandoned island in the middle of it.", "narration": "Stand at the end of the pier and look at the water. The Pentland Firth, between here and Orkney, has some of the fastest tides on the planet, running at up to twelve knots, and sailors have feared it for a thousand years. The Vikings called it Pettlandsfjord, the firth of the Picts, and their sagas tell of the Swelkie, a whirlpool off the north end of Stroma that they explained with a story about a magic mill called Grotti, stolen by a sea king, that ground out salt until it sank and is grinding still, which is why the sea is salty. Stroma is the island two miles in front of you. In nineteen hundred and one nearly four hundred people lived there, farming and fishing and salvaging wrecks, but the young left for the mainland, the school closed, and the last family moved out in nineteen sixty two. Look for the empty houses on the island, which still stand with their roofs on, and for the lighthouse at its north end. Beyond Stroma the long low shape is South Ronaldsay in Orkney, where the summer ferry lands at Burwick. To the east look for the Pentland Skerries with their lighthouse, first lit in seventeen ninety four. Now leave the harbour and follow the coast path east, with the sea on your left, towards the headland.", "tip": "A passenger ferry runs from this harbour to Orkney in summer only, about forty minutes each way. It does not take cars.", "lat": 58.6446, "lon": -3.0695, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Pentland_Firth", "source": "knowledge"}, {"n": 5, "title": "Duncansby Head", "teaser": "The true north eastern tip of mainland Britain, with a squat lighthouse and a chasm full of seabirds.", "narration": "This is the real end. Duncansby Head is the most north easterly point of the British mainland, and from here the coast runs south and the coast runs west and there is nothing more in front of you but sea. The lighthouse is a stubby square tower rather than the usual elegant cylinder, built in nineteen twenty four to a design by David Alan Stevenson, of the family that built almost every lighthouse in Scotland and also produced the author of Treasure Island. It was one of the last major lights built on the mainland and was automated in nineteen ninety seven, when the keepers left. Look out to sea for the Pentland Skerries to the north and, on a clear day, for the Orkney island of Hoy far to the north west. Now walk a short way south along the clifftop, carefully, to the Geo of Sclaites, a deep narrow chasm cut into the headland with the sea surging at the bottom. In spring and early summer every ledge is crowded with nesting seabirds, guillemots, razorbills, kittiwakes and fulmars, and puffins nest in burrows on the grassy slopes near the top. Look for the puffins' orange feet and clown faces from May to July. The noise and the smell are extraordinary. Carry on south along the path and the stacks come into view.", "tip": "It is about two miles from the village to the lighthouse along the coast path or the single track road, and the same back. The cliff edges are unfenced, and the wind can be brutal, so keep well back and keep dogs on a lead.", "lat": 58.6441, "lon": -3.0254, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Duncansby_Head", "source": "knowledge"}, {"n": 6, "title": "Duncansby Stacks", "teaser": "Three great pinnacles of red sandstone standing in the sea, taller than the cliffs they broke away from.", "narration": "Stop where the path swings round the bay and look at the stacks. These three great pyramids of rock standing in the sea are the Duncansby Stacks, and they are the finest sea stacks on the mainland of Scotland. The tallest, the Muckle Stack, rises about sixty metres from the water, which is higher than the cliff you are standing on. They are made of Old Red Sandstone, laid down in layers about four hundred million years ago when this was a desert basin, and you can see the layers running through them like the pages of a book. The sea cut them off from the headland by attacking the softer bands, and it is still at work. Look for the Thirle Door, the natural arch in the headland between you and the stacks, which will one day collapse and leave a new stack behind. Look for seals in the water below, and in summer for the seabirds wheeling around the pinnacles, which are safe nesting places that no fox can reach. It is a place that makes people fall quiet. The whole walk from the village, with the wind in your face and the cliffs on your left, is the best thing at John o' Groats, and most of the coach parties never see it. When you are ready, turn round and let the wind push you back to the signpost.", "tip": "Walk back the way you came to the village, about two and a half miles, or to the lighthouse car park if you left a car there.", "lat": 58.6386, "lon": -3.0246, "image": null, "imageCredit": null, "wiki": "https://en.wikipedia.org/wiki/Duncansby_Head", "source": "knowledge"}]};
+</script>
+<script>
+(function(){
+  "use strict";
+
+  if (typeof TOUR === "undefined" || !TOUR || !TOUR.stops) {
+    document.getElementById("stops").innerHTML =
+      '<p class="fallback">This is the blank tour template. Generate a tour with the walking-tour skill.</p>';
+    return;
+  }
+
+  var stops = TOUR.stops || [];
+
+  /* ---------- helpers ---------- */
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function hav(aLat,aLon,bLat,bLon){            /* metres */
+    var R=6371000, r=Math.PI/180;
+    var p1=aLat*r, p2=bLat*r, dp=(bLat-aLat)*r, dl=(bLon-aLon)*r;
+    var h=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+  function far(m){ return m<1000 ? Math.round(m/10)*10+" m" : (m/1000).toFixed(1)+" km"; }
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------- storage (guarded) ---------- */
+  var KEY = "scotland-tours:visited:" + (TOUR.slug || "tour");
+  var store = (function(){
+    try { var t="__t"; window.localStorage.setItem(t,t); window.localStorage.removeItem(t); return window.localStorage; }
+    catch(e){ return null; }
+  })();
+  function loadVisited(){
+    if(!store) return {};
+    try { var v=JSON.parse(store.getItem(KEY)||"[]"), o={}; for(var i=0;i<v.length;i++) o[v[i]]=true; return o; }
+    catch(e){ return {}; }
+  }
+  function saveVisited(){
+    if(!store) return;
+    var a=[]; for(var k in visited){ if(visited[k]) a.push(Number(k)); }
+    try { store.setItem(KEY, JSON.stringify(a)); } catch(e){}
+  }
+  var visited = loadVisited();
+
+  /* ---------- header ---------- */
+  document.title = (TOUR.title || "Walking tour");
+  $("t-title").textContent = TOUR.title || "Walking tour";
+  $("t-loc").textContent   = TOUR.location || "";
+  $("t-meta").textContent  = stops.length + " stops · " +
+      (Number(TOUR.totalKm)||0).toFixed(1) + " km · about " + (TOUR.estMinutes||0) + " min";
+  if (TOUR.flavour){ var fb=$("t-flavour"); fb.textContent=TOUR.flavour; fb.hidden=false; }
+  $("foot").innerHTML = "Generated " + esc(TOUR.generated||"") +
+    ' · Map &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>' +
+    ' · Photos <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>' +
+    ' · Routing <a href="https://project-osrm.org/" target="_blank" rel="noopener">OSRM</a>';
+
+  /* ---------- intro ---------- */
+  $("intro").innerHTML = '<p id="introtxt"></p><button id="playintro" type="button">&#9654;&nbsp; Play intro</button>';
+  $("introtxt").textContent = TOUR.intro || "";
+
+  /* ---------- stop cards ---------- */
+  var THISTLE = '<svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M12 21c0-5-1-7-1-9"/><path d="M8.5 6.2C8.5 4.4 10 3 12 3s3.5 1.4 3.5 3.2"/>' +
+    '<path d="M8.6 6h6.8c0 2.7-1.5 4.6-3.4 4.6S8.6 8.7 8.6 6z"/>' +
+    '<path d="M9.4 5.4 8 2.6M12 5.1V2M14.6 5.4 16 2.6"/>' +
+    '<path d="M11 14c-2.2.3-3.8 1.9-4.2 4M13 14c2.2.3 3.8 1.9 4.2 4"/></svg>';
+
+  var html = "";
+  for (var i=0;i<stops.length;i++){
+    var s = stops[i], n = s.n || (i+1), done = !!visited[n];
+    html += '<article class="stop'+(done?' visited':'')+'" id="stop-'+n+'" data-n="'+n+'">';
+    html += '<div class="stophead"><button class="num" type="button" data-act="map" data-n="'+n+'" ' +
+            'aria-label="Show stop '+n+' on the map">'+n+'</button><h2>'+esc(s.title)+'</h2></div>';
+    if (s.teaser) html += '<p class="teaser">'+esc(s.teaser)+'</p>';
+    if (s.image){
+      html += '<img class="shot" loading="lazy" decoding="async" src="'+esc(s.image)+'" alt="'+esc(s.title)+'">';
+      html += '<span class="credit"><a href="'+esc(s.wiki||"#")+'" target="_blank" rel="noopener">'+
+              esc(s.imageCredit||"Wikimedia Commons")+'</a></span>';
+    } else {
+      html += '<div class="ph" aria-hidden="true"><b>'+n+'</b>'+THISTLE+'</div>';
+    }
+    html += '<p class="narr">'+esc(s.narration)+'</p>';
+    if (s.tip) html += '<p class="tip"><b>Tip.</b> '+esc(s.tip)+'</p>';
+    html += '<div class="row">';
+    html += '<button type="button" data-act="say" data-n="'+n+'">&#9654;&nbsp; Listen</button>';
+    html += '<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination='+
+            encodeURIComponent(s.lat+","+s.lon)+'&amp;travelmode=walking">&#10152;&nbsp; Directions</a>';
+    html += '<button type="button" data-act="visit" data-n="'+n+'">'+
+            (done?'<span class="visited-tick">&#10003;</span>&nbsp; Visited':'&#9711;&nbsp; Mark visited')+'</button>';
+    html += '</div></article>';
+  }
+  $("stops").innerHTML = html;
+
+  function paintCard(n){
+    var card=$("stop-"+n); if(!card) return;
+    var done=!!visited[n];
+    card.className = "stop"+(done?" visited":"");
+    var b=card.querySelector('[data-act="visit"]');
+    if(b) b.innerHTML = done ? '<span class="visited-tick">&#10003;</span>&nbsp; Visited'
+                             : '&#9711;&nbsp; Mark visited';
+    if(markers[n] && markers[n].getElement && markers[n].getElement())
+      markers[n].getElement().classList.toggle("done", done);
+  }
+
+  /* ---------- map ---------- */
+  var map=null, markers={}, meDot=null, meRing=null;
+  if (window.L && stops.length){
+    map = L.map("map",{scrollWheelZoom:false});
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var pts=[];
+    for (var j=0;j<stops.length;j++){
+      var st=stops[j], nn=st.n||(j+1);
+      if (typeof st.lat!=="number" || typeof st.lon!=="number") continue;
+      pts.push([st.lat, st.lon]);
+      var mk = L.marker([st.lat,st.lon],{
+        icon: L.divIcon({className:"pin"+(visited[nn]?" done":""), html:"<span>"+nn+"</span>",
+                         iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-16]})
+      }).addTo(map);
+      mk.bindPopup("<b>"+esc(st.title)+"</b><br>Stop "+nn);
+      (function(num){
+        mk.on("click", function(){ var c=$("stop-"+num); if(c) c.scrollIntoView({behavior:"smooth",block:"start"}); });
+      })(nn);
+      markers[nn]=mk;
+    }
+    if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.18));
+
+    /* straight-line fallback drawn only if OSRM does not answer */
+    var routed=false;
+    function straight(){
+      if (routed || pts.length<2) return;
+      routed=true;
+      L.polyline(pts,{color:"#6b4c8a",weight:4,opacity:.8,dashArray:"7 7"}).addTo(map);
+    }
+    if (pts.length>1 && typeof window.fetch==="function"){
+      var coords=[]; for (var k=0;k<pts.length;k++) coords.push(pts[k][1]+","+pts[k][0]);
+      var url="https://router.project-osrm.org/route/v1/foot/"+coords.join(";")+"?overview=full&geometries=geojson";
+      var ctrl = (typeof AbortController==="function") ? new AbortController() : null;
+      var timer = setTimeout(function(){ if(ctrl){ try{ ctrl.abort(); }catch(e){} } straight(); }, 6000);
+      fetch(url, ctrl?{signal:ctrl.signal}:{})
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(new Error("osrm")); })
+        .then(function(d){
+          clearTimeout(timer);
+          var g = d && d.routes && d.routes[0] && d.routes[0].geometry;
+          if (routed || !g || !g.coordinates || !g.coordinates.length) { straight(); return; }
+          routed=true;
+          var line=[]; for (var m=0;m<g.coordinates.length;m++) line.push([g.coordinates[m][1], g.coordinates[m][0]]);
+          L.polyline(line,{color:"#6b4c8a",weight:5,opacity:.85}).addTo(map);
+        })
+        .catch(function(){ clearTimeout(timer); straight(); });
+    } else {
+      straight();
+    }
+  }
+
+  /* ---------- speech ---------- */
+  var synth = ("speechSynthesis" in window) ? window.speechSynthesis : null;
+  var voice=null, queue=[], qi=-1, single=-1;
+
+  function pickVoice(){
+    if(!synth || !synth.getVoices) return;
+    var vs = synth.getVoices() || [], i;
+    for (i=0;i<vs.length;i++) if (/scot/i.test(vs[i].name||"")) { voice=vs[i]; return; }
+    for (i=0;i<vs.length;i++) if ((vs[i].lang||"").toLowerCase().replace("_","-")==="en-gb") { voice=vs[i]; return; }
+    voice=null;
+  }
+  if (synth){ pickVoice(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice; }
+
+  function resetButtons(){
+    var bs=document.querySelectorAll('[data-act="say"]'), i;
+    for(i=0;i<bs.length;i++) bs[i].innerHTML="&#9654;&nbsp; Listen";
+    var pi=$("playintro"); if(pi) pi.innerHTML="&#9654;&nbsp; Play intro";
+    $("playall").innerHTML="&#9654;&nbsp; Play whole tour";
+  }
+  function showNow(txt){
+    var bar=$("now");
+    if (txt){ $("nowtxt").textContent=txt; bar.classList.add("on"); document.body.classList.add("playing"); }
+    else { bar.classList.remove("on"); document.body.classList.remove("playing"); }
+  }
+  function stopAll(){
+    queue=[]; qi=-1; single=-1;
+    if (synth) { try{ synth.cancel(); }catch(e){} }
+    resetButtons(); showNow("");
+  }
+  function utter(text, onend){
+    if (!synth) return false;
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate=0.95; u.lang="en-GB";
+    if (voice) u.voice=voice;
+    u.onend = onend || null;
+    u.onerror = onend || null;
+    try { synth.speak(u); } catch(e){ return false; }
+    return true;
+  }
+  function noSpeech(){
+    showNow("Speech is not available on this browser.");
+    setTimeout(function(){ showNow(""); }, 3000);
+  }
+
+  function sayOne(n){
+    if (!synth) { noSpeech(); return; }
+    if (single === n){ stopAll(); return; }
+    stopAll();
+    var s=null; for (var i=0;i<stops.length;i++) if ((stops[i].n||(i+1))===n) s=stops[i];
+    if (!s) return;
+    single = n;
+    var btn = document.querySelector('[data-act="say"][data-n="'+n+'"]');
+    if (btn) btn.innerHTML="&#9632;&nbsp; Stop";
+    showNow("Now playing: stop " + n);
+    utter((s.title||"") + ". " + (s.narration||""), function(){
+      if (single===n){ single=-1; resetButtons(); showNow(""); }
+    });
+  }
+  function sayIntro(){
+    if (!synth) { noSpeech(); return; }
+    if (single === 0){ stopAll(); return; }
+    stopAll(); single = 0;
+    $("playintro").innerHTML="&#9632;&nbsp; Stop";
+    showNow("Now playing: introduction");
+    utter(TOUR.intro || "", function(){
+      if (single===0){ single=-1; resetButtons(); showNow(""); }
+    });
+  }
+  function step(){
+    if (qi < 0 || qi >= queue.length){ stopAll(); return; }
+    var item = queue[qi];
+    showNow("Now playing: " + item.label);
+    if (item.scroll){ var c=$("stop-"+item.scroll); if(c) c.scrollIntoView({behavior:"smooth",block:"start"}); }
+    utter(item.text, function(){ if(qi<0) return; qi++; step(); });
+  }
+  function playAll(){
+    if (!synth) { noSpeech(); return; }
+    if (qi > -1){ stopAll(); return; }
+    stopAll();
+    queue = [{label:"introduction", text:TOUR.intro||"", scroll:0}];
+    for (var i=0;i<stops.length;i++){
+      var s=stops[i], n=s.n||(i+1);
+      queue.push({label:"stop "+n+" · "+(s.title||""), text:(s.title||"")+". "+(s.narration||""), scroll:n});
+    }
+    qi = 0;
+    $("playall").innerHTML="&#9632;&nbsp; Stop tour";
+    step();
+  }
+
+  /* ---------- geolocation (user gesture only, never on load) ---------- */
+  var watchId=null, firstFix=true;
+  function geoStatus(t){ $("geostatus").textContent=t; }
+  function locate(){
+    if (!navigator.geolocation){ geoStatus("This browser cannot share your location."); return; }
+    if (watchId!==null){
+      navigator.geolocation.clearWatch(watchId); watchId=null; firstFix=true;
+      if (map && meDot){ map.removeLayer(meDot); meDot=null; }
+      if (map && meRing){ map.removeLayer(meRing); meRing=null; }
+      $("locate").innerHTML="&#9678;&nbsp; Locate me";
+      $("geostatus").classList.remove("live");
+      geoStatus("Location off. Tap “Locate me” to turn it back on.");
+      return;
+    }
+    $("geostatus").classList.add("live");
+    geoStatus("Finding you…");
+    $("locate").innerHTML="&#9678;&nbsp; Stop locating";
+    watchId = navigator.geolocation.watchPosition(onPos, onGeoErr, {
+      enableHighAccuracy:true, maximumAge:5000, timeout:20000
+    });
+  }
+  function onPos(pos){
+    var la=pos.coords.latitude, lo=pos.coords.longitude, acc=pos.coords.accuracy||0;
+    if (map){
+      if (!meDot){
+        meDot = L.marker([la,lo],{icon:L.divIcon({className:"me",html:"<i></i>",iconSize:[16,16],iconAnchor:[8,8]}),
+                                  zIndexOffset:1000}).addTo(map);
+        meRing = L.circle([la,lo],{radius:acc,color:"#1e7bf0",weight:1,fillColor:"#1e7bf0",fillOpacity:.10}).addTo(map);
+      } else {
+        meDot.setLatLng([la,lo]); meRing.setLatLng([la,lo]); meRing.setRadius(acc);
+      }
+    }
+    var best=null;
+    for (var i=0;i<stops.length;i++){
+      var s=stops[i], n=s.n||(i+1);
+      if (visited[n]) continue;
+      if (typeof s.lat!=="number" || typeof s.lon!=="number") continue;
+      var d=hav(la,lo,s.lat,s.lon);
+      if (!best || d<best.d) best={d:d,n:n,title:s.title,lat:s.lat,lon:s.lon};
+    }
+    if (firstFix && map){
+      if (best) map.fitBounds(L.latLngBounds([[la,lo],[best.lat,best.lon]]),{padding:[40,40],maxZoom:17});
+      else map.setView([la,lo],16);
+      firstFix=false;
+    }
+    if (!best) geoStatus("Every stop is marked visited. Well walked.");
+    else if (best.d>20000) geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title + ". Not there yet.");
+    else geoStatus("You are " + far(best.d) + " from stop " + best.n + " · " + best.title);
+  }
+  function onGeoErr(err){
+    $("locate").innerHTML="&#9678;&nbsp; Locate me";
+    if (watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
+    firstFix=true;
+    $("geostatus").classList.remove("live");
+    var msg = "Could not get your location. Carry on with the map.";
+    if (err && err.code===1) msg = "Location permission was declined. The tour works fine without it.";
+    else if (err && err.code===2) msg = "No location signal here. Try again outdoors.";
+    else if (err && err.code===3) msg = "Location is taking too long. Try again in a moment.";
+    geoStatus(msg);
+  }
+
+  /* ---------- events (delegated) ---------- */
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest ? ev.target.closest("[data-act]") : null;
+    if (!b) return;
+    var n = Number(b.getAttribute("data-n")), act = b.getAttribute("data-act");
+    if (act==="say")   { sayOne(n); }
+    else if (act==="visit"){ visited[n] = !visited[n]; saveVisited(); paintCard(n); }
+    else if (act==="map")  {
+      if (!map || !markers[n]) return;
+      map.setView(markers[n].getLatLng(), Math.max(map.getZoom(), 17), {animate:true});
+      markers[n].openPopup();
+      $("map").scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  });
+  $("playall").addEventListener("click", playAll);
+  $("playintro").addEventListener("click", sayIntro);
+  $("nowstop").addEventListener("click", stopAll);
+  $("locate").addEventListener("click", locate);
+  window.addEventListener("pagehide", function(){ if(synth){ try{ synth.cancel(); }catch(e){} } });
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+
+  function init(){
+    var bar = document.getElementById("browserbar");
+    if (!bar) return;
+
+    /* only in an in-app WebView, or anywhere speech is missing */
+    var ua = navigator.userAgent || "";
+    var android = /Android/i.test(ua);
+    var noTts = !("speechSynthesis" in window);
+    var webview = android && (/\bwv\b/.test(ua) || noTts);
+    if (!(webview || noTts)) return;
+
+    function $(id){ return document.getElementById(id); }
+    var here = window.location;
+    var back = encodeURIComponent(here.href);
+    function intent(pkg){
+      return "intent://" + here.host + here.pathname + here.search +
+             "#Intent;scheme=https;package=" + pkg +
+             ";S.browser_fallback_url=" + back + ";end";
+    }
+
+    var chrome=$("bb-chrome"), edge=$("bb-edge"), copy=$("bb-copy"),
+        hint=$("bb-hint"), box=$("bb-url");
+
+    if (chrome) chrome.href = intent("com.android.chrome");
+    if (edge)   edge.href   = intent("com.microsoft.emmx");
+
+    function armHint(){
+      setTimeout(function(){
+        if (hint && document.visibilityState === "visible") hint.hidden = false;
+      }, 1500);
+    }
+    if (chrome) chrome.addEventListener("click", armHint);
+    if (edge)   edge.addEventListener("click", armHint);
+
+    function showBox(){
+      if (!box) return;
+      box.value = here.href;
+      box.hidden = false;
+      try { box.focus(); box.select(); } catch(e){}
+    }
+    if (copy) copy.addEventListener("click", function(){
+      function copied(){
+        copy.textContent = "Copied";
+        setTimeout(function(){ copy.textContent = "Copy link"; }, 2000);
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(here.href).then(copied, showBox);
+          return;
+        }
+      } catch(e){}
+      showBox();
+    });
+
+    bar.classList.add("on");
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+</body>
+</html>
